@@ -7,6 +7,8 @@
 # Created:   07 February 2024
 #
 ###############################################################################
+import os
+
 import discord
 import requests
 import json
@@ -25,7 +27,7 @@ def define_commands(client, port) -> None:
     :return: None
     """
 
-    @client.tree.command()
+    @client.tree.command(name="add_request", description="Ajout d'une nouvelle recherche de vêtements")
     async def add_request(interaction: discord.Interaction) -> None:
         """
         Add a new clothe request and run it in background.
@@ -98,3 +100,28 @@ def define_commands(client, port) -> None:
         else:
             await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
                                             "de données, veuillez réessayer. [1]", ephemeral=True)
+
+    @client.tree.command(name="hello", description="Check si bot vivant")
+    async def hello(interaction: discord.Interaction) -> None:
+        """
+        Small ping to bot to check whether he's alive or not.
+        :param interaction:
+        :return:
+        """
+        await interaction.response.send_message("Hello !", ephemeral=True)
+
+    @client.tree.command(name="sync", description="Admin seulement")
+    async def sync(interaction: discord.Interaction) -> None:
+        """
+        Sync slash commands.
+        :param interaction: discord.Interaction
+        :return: None
+        """
+        if interaction.user.id == int(os.getenv("NEEKO_ID")):
+            await interaction.response.defer()
+            await client.tree.sync()
+            print('Command tree synced.')
+            await interaction.followup.send("Sync done.", ephemeral=True)
+        else:
+            await interaction.response.send_message("Vous n'êtes pas Neeko (:",
+                                                    ephemeral=True)
