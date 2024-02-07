@@ -13,7 +13,7 @@ import json
 from datetime import datetime
 
 from utils.add_requests import AddRequestsForm
-from utils.utils import reformat_clothes_states, serialize_datetime
+from utils.utils import reformat_clothes_states
 from utils.defines import API_HOST, UPDATE_REQUESTS_ROUTE, ADD_ASSOCIATION_ROUTE, PER_PAGE, CATEGORY
 
 
@@ -78,12 +78,11 @@ def define_commands(client, port) -> None:
             association = {"request_id": inserted_id,
                            "request_name": name,
                            "channel_id": channel.id,
-                           "channel_name": channel.name,
-                           "creation_date": datetime.now()}
+                           "channel_name": channel.name}
 
             # Call the API to insert the association
             add_association = requests.post(f"{API_HOST}:{port}/{ADD_ASSOCIATION_ROUTE}",
-                                            data=json.dumps(association, default=serialize_datetime))
+                                            data=json.dumps(association))
 
             # Health check and run task
             if add_association.status_code == 200:
