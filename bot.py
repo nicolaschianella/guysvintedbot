@@ -17,7 +17,7 @@ from discord import app_commands
 from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE
 
 
-class GuysvintedBot(discord.Client):
+class GuysVintedBot(discord.Client):
     """
     The GuysVintedBot hehe.
     All the bot functionalities all located here.
