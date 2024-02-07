@@ -14,7 +14,7 @@ import json
 import os
 
 from discord import app_commands
-from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME
+from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE
 
 
 class GuysvintedBot(discord.Client):
@@ -84,6 +84,9 @@ class GuysvintedBot(discord.Client):
             # Now compare to cache
             new_clothes = [_request for _request in data if _request not in cache]
 
+            # Reverse list to post from oldest to newest
+            new_clothes.reverse()
+
             # If new clothes we post and update cache
             if new_clothes:
                 for clothe in new_clothes:
@@ -97,8 +100,12 @@ class GuysvintedBot(discord.Client):
                     await channel.send(embed=embed)
                     await all_clothes_channel.send(embed=embed)
 
-                # Update cache
-                cache = new_clothes.copy()
+                    # Update cache (newest to oldest)
+                    cache.insert(0, clothe)
+
+                    # Security for cache length
+                    if len(cache) > 4 * PER_PAGE:
+                        cache = cache[:3 * PER_PAGE]
 
             # Finally wait for another API call
             await asyncio.sleep(int(WAIT_TIME))
