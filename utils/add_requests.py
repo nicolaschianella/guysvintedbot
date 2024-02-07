@@ -141,7 +141,7 @@ class BrandStateSelectView(discord.ui.View):
 
 class ClothesStatesSelect(discord.ui.Select):
     """
-    Represents the cloths states selector.
+    Represents the clothes states selector.
     """
     def __init__(self):
         options=[discord.SelectOption(label=state, value=state_id) for (state, state_id) in CLOTHES_STATES.items()]
