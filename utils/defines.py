@@ -17,12 +17,14 @@ GET_REQUESTS_ROUTE = "api/operations/get_requests"
 UPDATE_REQUESTS_ROUTE = "api/operations/update_requests"
 # Route to add_association
 ADD_ASSOCIATION_ROUTE = "api/operations/add_association"
+# Route to get {requests: channel_ids}
+REQUESTS_CHANNEL_IDS_ROUTE = "api/operations/get_active_requests_and_channels"
 # In which category we create new text channel upon saving a clothe request
 CATEGORY = "buybuybuybuy"
 # Time in seconds to wait for a new API call to get_clothes
 WAIT_TIME = "10"
 # API parameter, in case too low can be increased up to 96
-PER_PAGE = "10"
+PER_PAGE = "50"
 # Define referenced brands
 BRANDS = {
     "adidas": "14",
