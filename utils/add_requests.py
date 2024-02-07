@@ -136,7 +136,7 @@ class BrandStateSelectView(discord.ui.View):
 
         await interaction.message.edit(view=self,
                                        content="Insertion dans la base de données en cours...",
-                                       delete_after=10)
+                                       delete_after=5)
 
 
 class ClothesStatesSelect(discord.ui.Select):
