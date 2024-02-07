@@ -12,7 +12,6 @@ import os
 import discord
 import requests
 import json
-from datetime import datetime
 
 from utils.add_requests import AddRequestsForm
 from utils.utils import reformat_clothes_states
