@@ -89,8 +89,8 @@ def define_commands(client, port) -> None:
             if add_association.status_code == 200:
                 await interaction.followup.send("Insertion réussie !", ephemeral=True)
 
-                # Final step: run the task
-                await client.loop.create_task(client.get_clothes(request, channel.id))
+                # Final step: run the task - add to requests dict to be stoppable
+                client.requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
 
             else:
                 await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
