@@ -15,7 +15,8 @@ import os
 import logging
 
 from discord import app_commands
-from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE
+from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE, \
+                            USER_INFOS_ROUTE
 
 
 class GuysVintedBot(discord.Client):
@@ -71,6 +72,7 @@ class GuysVintedBot(discord.Client):
 
         # Infinite loop
         while not self.is_closed():
+            # TODO: handle case where status_code != 200
             # Request the API to get new clothes
             response = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_ROUTE}",
                                     data=json.dumps(request))
@@ -91,10 +93,20 @@ class GuysVintedBot(discord.Client):
             # If new clothes we post and update cache
             if new_clothes:
                 for clothe in new_clothes:
+                    # TODO: handle case where status_code != 200
+                    # Call the API to get user infos
+                    user_infos = requests.get(f"{API_HOST}:{self.port}/{USER_INFOS_ROUTE}",
+                                              data=json.dumps({"user_id": clothe["seller_id"]}))
+
+                    # Get result
+                    user_reviews = json.loads(user_infos.json()["data"])["number_reviews"]
+                    user_stars = json.loads(user_infos.json()["data"])["number_stars"]
+
                     # Format data in embed
                     # TODO: change embed
                     embed = discord.Embed(color=discord.Color.dark_blue(),
-                                          description=clothe["url"],
+                                          description=f"url: {clothe['url']}, stars: {user_stars}, "
+                                                      f"reviews: {user_reviews}",
                                           title=clothe["title"])
 
                     # Post in local and global channels
