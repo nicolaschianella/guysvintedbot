@@ -17,6 +17,8 @@ GET_REQUESTS_ROUTE = "api/operations/get_requests"
 UPDATE_REQUESTS_ROUTE = "api/operations/update_requests"
 # Route to add_association
 ADD_ASSOCIATION_ROUTE = "api/operations/add_association"
+# Route to get user infos
+USER_INFOS_ROUTE = "api/operations/get_user_infos"
 # Route to get {requests: channel_ids}
 REQUESTS_CHANNEL_IDS_ROUTE = "api/operations/get_active_requests_and_channels"
 # In which category we create new text channel upon saving a clothe request
