@@ -12,6 +12,7 @@ import asyncio
 import requests
 import json
 import os
+import logging
 
 from discord import app_commands
 from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE
@@ -61,7 +62,7 @@ class GuysVintedBot(discord.Client):
         # Wait to have everything set up
         await self.wait_until_ready()
 
-        # Define cache
+        # Define cache - using clothes ids
         cache = []
 
         # Define channels where we are going to post messages
@@ -79,10 +80,10 @@ class GuysVintedBot(discord.Client):
 
             # To prevent the bot to post multiple messages on startup
             if not cache:
-                cache = data.copy()
+                cache = [clothe["id"] for clothe in data]
 
             # Now compare to cache
-            new_clothes = [_request for _request in data if _request not in cache]
+            new_clothes = [clothe for clothe in data if clothe["id"] not in cache]
 
             # Reverse list to post from oldest to newest
             new_clothes.reverse()
@@ -93,7 +94,7 @@ class GuysVintedBot(discord.Client):
                     # Format data in embed
                     # TODO: change embed
                     embed = discord.Embed(color=discord.Color.dark_blue(),
-                                          description=request,
+                                          description=clothe["url"],
                                           title=clothe["title"])
 
                     # Post in local and global channels
@@ -101,11 +102,11 @@ class GuysVintedBot(discord.Client):
                     await all_clothes_channel.send(embed=embed)
 
                     # Update cache (newest to oldest)
-                    cache.insert(0, clothe)
+                    cache.insert(0, clothe["id"])
 
-                    # Security for cache length
-                    if len(cache) > 4 * PER_PAGE:
-                        cache = cache[:3 * PER_PAGE]
+                # Security for cache length
+                if len(cache) > 4 * int(PER_PAGE):
+                    cache = cache[:3 * int(PER_PAGE)]
 
             # Finally wait for another API call
             await asyncio.sleep(int(WAIT_TIME))
