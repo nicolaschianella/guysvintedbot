@@ -24,7 +24,7 @@ CATEGORY = "buybuybuybuy"
 # Time in seconds to wait for a new API call to get_clothes
 WAIT_TIME = "10"
 # API parameter, in case too low can be increased up to 96
-PER_PAGE = "20"
+PER_PAGE = "10"
 # Define referenced brands
 BRANDS = {
     "adidas": "14",
