@@ -19,14 +19,18 @@ UPDATE_REQUESTS_ROUTE = "api/operations/update_requests"
 ADD_ASSOCIATION_ROUTE = "api/operations/add_association"
 # Route to get user infos
 USER_INFOS_ROUTE = "api/operations/get_user_infos"
+# Route to scrape clothes images
+GET_IMAGES_URL_ROUTE = "api/operations/get_images_url"
 # Route to get {requests: channel_ids}
 REQUESTS_CHANNEL_IDS_ROUTE = "api/operations/get_active_requests_and_channels"
 # In which category we create new text channel upon saving a clothe request
 CATEGORY = "buybuybuybuy"
 # Time in seconds to wait for a new API call to get_clothes
-WAIT_TIME = "10"
+WAIT_TIME = "1"
 # API parameter, in case too low can be increased up to 96
 PER_PAGE = "10"
+# In case we could not retrieve clothe images
+NO_IMAGE_AVAILABLE_URL = "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg"
 # Define referenced brands
 BRANDS = {
     "adidas": "14",
