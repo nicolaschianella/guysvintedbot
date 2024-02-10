@@ -12,11 +12,13 @@ import asyncio
 import requests
 import json
 import os
+import datetime
 import logging
 
 from discord import app_commands
 from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE, \
-                            USER_INFOS_ROUTE
+                            USER_INFOS_ROUTE, GET_IMAGES_URL_ROUTE, NO_IMAGE_AVAILABLE_URL
+from utils.display_requests import Buttons
 
 
 class GuysVintedBot(discord.Client):
@@ -102,16 +104,58 @@ class GuysVintedBot(discord.Client):
                     user_reviews = json.loads(user_infos.json()["data"])["number_reviews"]
                     user_stars = json.loads(user_infos.json()["data"])["number_stars"]
 
-                    # Format data in embed
-                    # TODO: change embed
-                    embed = discord.Embed(color=discord.Color.dark_blue(),
-                                          description=f"url: {clothe['url']}, stars: {user_stars}, "
-                                                      f"reviews: {user_reviews}",
-                                          title=clothe["title"])
+                    # Call the API to get images
+                    images_url = requests.get(f"{API_HOST}:{self.port}/{GET_IMAGES_URL_ROUTE}",
+                                              data=json.dumps({"clothe_url": clothe["url"]}))
 
-                    # Post in local and global channels
-                    await channel.send(embed=embed)
-                    await all_clothes_channel.send(embed=embed)
+                    # Handle case where we have no images (internal server error)
+                    if images_url.status_code != 200:
+                        # Default no image available image
+                        url_list = [NO_IMAGE_AVAILABLE_URL]
+
+                    else:
+                        # Retrieve images
+                        url_list = images_url.json()["data"]["images_url"]
+
+                        # Case no image received
+                        if not url_list:
+                            # Default no image available image
+                            url_list = [NO_IMAGE_AVAILABLE_URL]
+
+                    # Convert publish date to timestamp for dynamic display (drop milliseconds)
+                    api_time = datetime.datetime.strptime(clothe["created_at_ts"], "%Y-%m-%dT%H:%M:%S%z")
+                    api_time_ts = int(datetime.datetime.timestamp(api_time))
+
+                    # Custom title in case we may have suspicious pictures
+                    title = clothe["title"] if not clothe["is_photo_suspicious"] \
+                        else clothe["title"] + " - PHOTOS SUSPICIEUSES"
+
+                    # Build reviews display
+                    reviews = "⭐" * user_stars if user_stars != 0 else "⛔"
+
+                    # Build embedded message
+                    embeds = []
+
+                    for url in url_list:
+                        # We force URL to everytime the product url
+                        embed = discord.Embed(title=title,
+                                              color=discord.Color.dark_blue(),
+                                              url=clothe["url"]).set_image(url=url)
+                        embed.add_field(name="⌛ Publié", value=f"<t:{api_time_ts}:R>", inline=True)
+                        embed.add_field(name="👕️ Marque", value=clothe["brand_title"], inline=True)
+                        embed.add_field(name="📏 Taille", value=clothe["size_title"], inline=True)
+                        embed.add_field(name="🌟 Avis", value=reviews + f" ({user_reviews})", inline=True)
+                        embed.add_field(name="💎 État", value=clothe["status"], inline=True)
+                        embed.add_field(name="💰 Prix", value=f"{clothe['total_item_price']} € | "
+                                                             f"{clothe['price_no_fee']} € + "
+                                                             f"{clothe['service_fee']} € fees",
+                                        inline=True)
+                        embeds.append(embed)
+
+                    # Post in local and global channels - add buttons with parameters needed for visiting item
+                    # and autobuy
+                    await channel.send(embeds=embeds, view=Buttons(url=clothe["url"]))
+                    await all_clothes_channel.send(embeds=embeds, view=Buttons(url=clothe["url"]))
 
                     # Update cache (newest to oldest)
                     cache.insert(0, clothe["id"])
