@@ -90,7 +90,7 @@ def define_commands(client, port) -> None:
                 await interaction.followup.send("Insertion réussie !", ephemeral=True)
 
                 # Final step: run the task - add to requests dict to be stoppable
-                client.requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
+                client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
 
             else:
                 await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
@@ -100,12 +100,33 @@ def define_commands(client, port) -> None:
             await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
                                             "de données, veuillez réessayer. [1]", ephemeral=True)
 
+    @client.tree.command(name="get_running_requests", description="Voir les recherches en cours")
+    async def get_running_requests(interaction: discord.Interaction) -> None:
+        """
+        Small command showing all the current clothes requests running
+        Args:
+            interaction: discord.Interaction
+
+        Returns: None
+
+        """
+        await interaction.response.defer()
+
+        msg = ""
+
+        for running_request_id in client.running_requests.keys():
+            running_request = client.requests[running_request_id].copy()
+            running_request.pop("_id")
+            msg += f"_id: {running_request_id}, recherche: {running_request}\n\n"
+
+        await interaction.followup.send(msg) if msg else await interaction.followup.send("Aucune recherche active.")
+
     @client.tree.command(name="hello", description="Check si bot vivant")
     async def hello(interaction: discord.Interaction) -> None:
         """
         Small ping to bot to check whether he's alive or not.
-        :param interaction:
-        :return:
+        :param interaction: discord.Interaction
+        :return: None
         """
         await interaction.response.send_message("Hello !", ephemeral=True)
 
