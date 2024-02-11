@@ -7,6 +7,8 @@
 # Created:   07 February 2024
 #
 ###############################################################################
+import logging
+
 import discord
 
 
@@ -37,6 +39,8 @@ class Buttons(discord.ui.View):
         """
         await interaction.response.defer()
 
-        # TODO: here add autobuy, and if works, save purchase in MongoDB
+        logging.info(f"Processing autobuy for clothe_url: {self.url}")
+
+        # TODO: here add autobuy, and if works, save purchase in MongoDB + change logs with other inputs
 
         await interaction.followup.send(self.url, ephemeral=True)

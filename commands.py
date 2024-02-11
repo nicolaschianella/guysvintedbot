@@ -12,6 +12,7 @@ import os
 import discord
 import requests
 import json
+import logging
 
 from utils.add_requests import AddRequestsForm
 from utils.utils import reformat_clothes_states
@@ -33,6 +34,8 @@ def define_commands(client, port) -> None:
         :param interaction: discord.Interaction
         :return: None
         """
+
+        logging.info(f"Adding new clothe request by user: {interaction.user} (id: {interaction.user.id})")
 
         add_requests_form = AddRequestsForm()
         await interaction.response.send_modal(add_requests_form)
@@ -61,6 +64,8 @@ def define_commands(client, port) -> None:
             "status_ids": clothes_states
         }
 
+        logging.info(f"Attempting insertion of request: {request}")
+
         try:
             # Attempt the request save
             save_request = requests.post(f"{API_HOST}:{port}/{UPDATE_REQUESTS_ROUTE}",
@@ -70,6 +75,8 @@ def define_commands(client, port) -> None:
             if save_request.status_code == 200:
                 # Get request inserted id
                 inserted_id = json.loads(save_request.json()["data"])["added"][0]
+
+                logging.info(f"Success - request {request} successfully inserted in DBi (inserted id: {inserted_id})")
 
                 # Create new channel
                 guild = client.guilds[0]
@@ -82,29 +89,48 @@ def define_commands(client, port) -> None:
                                "channel_id": channel.id,
                                "channel_name": channel.name}
 
+                logging.info(f"Corresponding association: {association} (request: {request})")
+
+                logging.info(f"Attempting insertion of association: {association}")
+
                 # Call the API to insert the association
                 add_association = requests.post(f"{API_HOST}:{port}/{ADD_ASSOCIATION_ROUTE}",
                                                 data=json.dumps(association))
 
                 # Health check and run task
                 if add_association.status_code == 200:
-                    await interaction.followup.send("Insertion réussie !", ephemeral=True)
+                    await interaction.followup.send(f"Insertion réussie !\nRecherche: {request}\n"
+                                                    f"Association: {association}", ephemeral=True)
+
+                    logging.info(f"Success - association {association} successfully inserted in DB (request {request})")
 
                     # Final step: run the task - add to requests dict to be stoppable
                     request["_id"] = inserted_id
+                    logging.info(f"Running task for channel: {channel.id}, request: {request}")
                     client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
 
+                    await interaction.followup.send(f"Recherche: {request}, association: {association} tourne désormais "
+                                                    f"en tâche de fond.", ephemeral=True)
+
                 else:
+                    error_code = 2
+                    logging.error(f"Could not insert association: {association} in DB (displayed error code "
+                                  f"[{error_code}])")
                     await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
-                                                    "de données, veuillez réessayer. [2]", ephemeral=True)
+                                                    f"de données, veuillez réessayer. [{error_code}]")
 
             else:
+                error_code = 1
+                logging.error(f"Could not insert request: {request} in DB (displayed error code [{error_code}])")
                 await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
-                                                "de données, veuillez réessayer. [1]", ephemeral=True)
+                                                f"de données, veuillez réessayer. [{error_code}]")
 
         except Exception as e:
+            error_code = 3
+            logging.error(f"There was an exception while saving request {request} in DB: {e}")
+            logging.error(f"Displayed error code [{error_code}]")
             await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
-                                            "de données, veuillez réessayer. [3]", ephemeral=True)
+                                            f"de données, veuillez réessayer. [{error_code}]")
 
 
     @client.tree.command(name="get_running_requests", description="Voir les recherches en cours")
@@ -119,6 +145,8 @@ def define_commands(client, port) -> None:
         """
         await interaction.response.defer()
 
+        logging.info(f"Getting all running requests (user: {interaction.user}, user_id: {interaction.user.id})")
+
         msg = ""
 
         for running_request_id in client.running_requests.keys():
@@ -126,7 +154,12 @@ def define_commands(client, port) -> None:
             running_request.pop("_id")
             msg += f"_id: {running_request_id}, recherche: {running_request}\n\n"
 
-        await interaction.followup.send(msg) if msg else await interaction.followup.send("Aucune recherche active.")
+        if not msg:
+            msg = "Aucune recherche active."
+
+        logging.info(f"Msg: {msg}")
+
+        await interaction.followup.send(msg)
 
     @client.tree.command(name="hello", description="Check si bot vivant")
     async def hello(interaction: discord.Interaction) -> None:
@@ -135,6 +168,7 @@ def define_commands(client, port) -> None:
         :param interaction: discord.Interaction
         :return: None
         """
+        logging.info(f"Hello! (user: {interaction.user}, user_id: {interaction.user.id})")
         await interaction.response.send_message("Hello !", ephemeral=True)
 
     @client.tree.command(name="sync", description="Admin seulement")
@@ -145,10 +179,12 @@ def define_commands(client, port) -> None:
         :return: None
         """
         if interaction.user.id == int(os.getenv("NEEKO_ID")):
+            logging.info(f"Neeko syncing command tree")
             await interaction.response.defer()
             await client.tree.sync()
-            print('Command tree synced.')
+            logging.info('Command tree synced')
             await interaction.followup.send("Sync done.", ephemeral=True)
         else:
+            logging.warning(f"Command tree ync attempted by user: {interaction.user} (user_id: {interaction.user.id})")
             await interaction.response.send_message("Vous n'êtes pas Neeko (:",
                                                     ephemeral=True)

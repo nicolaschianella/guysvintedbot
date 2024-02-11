@@ -8,6 +8,7 @@
 #
 ###############################################################################
 import discord
+import logging
 from utils.defines import BRANDS, CLOTHES_STATES
 
 
@@ -61,25 +62,28 @@ class AddRequestsForm(discord.ui.Modal,
         :param interaction: discord.Interaction
         :return: None
         """
-        # Call the selectors
-        select_view = BrandStateSelectView()
-        await interaction.response.send_message(view=select_view)
-        await select_view.wait()
-        # Get the variables
-        self.brand, self.clothes_states = select_view.brand, select_view.clothes_states
-        # Process OK
-        self.sent = True
+        try:
+            # Call the selectors
+            select_view = BrandStateSelectView()
+            await interaction.response.send_message(view=select_view)
+            await select_view.wait()
+            # Get the variables
+            self.brand, self.clothes_states = select_view.brand, select_view.clothes_states
+
+        except Exception as e:
+            logging.error(f"There was an exception with AddRequestsForm modal (on_submit): {e}")
 
     # Called if error of any kind
     async def on_error(self,
                        interaction: discord.Interaction,
-                       error: Exception) -> None:
+                       e: Exception) -> None:
         """
         Called when something when wrong in the form. Notifies the user.
         :param interaction: discord.Interaction
-        :param error: Exception
+        :param e: Exception
         :return: None
         """
+        logging.error(f"There was an exception with AddRequestsForm modal (on_error): {e}")
         # Notify the sender
         await interaction.response.send_message("Oops! Quelque chose s'est mal passé.", ephemeral=True)
 
@@ -98,54 +102,73 @@ class BrandStateSelectView(discord.ui.View):
     )
     async def select_brand(self,
                            interaction: discord.Interaction,
-                           select_item: discord.ui.Select):
+                           select_item: discord.ui.Select) -> None:
         """
         Calls the brand selector, and once done, the clothes states selector.
-        :param interaction:
-        :param select_item:
+        :param interaction: discord.Interaction
+        :param select_item: discord.ui.Select, selected brand
         :return:
         """
-        # Get the filtered brand - already as id
-        self.brand = select_item
-        # Disable the selector
-        self.children[0].disabled = True
-        # Now call the clothes states selector and add it to the view
-        clothes_states = ClothesStatesSelect()
-        self.add_item(clothes_states)
-        await interaction.message.edit(view=self)
-        await interaction.response.defer()
+        try:
+            # Get the filtered brand - already as id
+            self.brand = select_item
+            # Disable the selector
+            self.children[0].disabled = True
+            # Now call the clothes states selector and add it to the view
+            clothes_states = ClothesStatesSelect()
+            self.add_item(clothes_states)
+            await interaction.message.edit(view=self)
+            await interaction.response.defer()
+
+        except Exception as e:
+            logging.error(f"There was an exception with BrandStateSelectView view (select_brand): {e}")
 
     async def select_clothes_states(self,
                                  interaction: discord.Interaction,
-                                 choices: list):
+                                 choices: list) -> None:
         """
         Calls the clothes selector
-        :param interaction:
-        :param choices:
+        :param interaction: discord.Interaction
+        :param choices: list, list of clothes_states chosen
         :return:
         """
-        # Get the chosen clothes states
-        self.clothes_states = choices
-        # Disable the selector
-        self.children[1].disabled = True
-        await interaction.message.edit(view=self)
-        await interaction.response.defer()
-        # Clear everything from the view
-        self.clear_items()
-        self.stop()
+        try:
+            # Get the chosen clothes states
+            self.clothes_states = choices
+            # Disable the selector
+            self.children[1].disabled = True
+            await interaction.message.edit(view=self)
+            await interaction.response.defer()
+            # Clear everything from the view
+            self.clear_items()
+            self.stop()
 
-        await interaction.message.edit(view=self,
-                                       content="Insertion dans la base de données en cours...",
-                                       delete_after=5)
+            await interaction.message.edit(view=self,
+                                           content="Insertion dans la base de données en cours...",
+                                           delete_after=5)
+
+        except Exception as e:
+            logging.error(f"There was an exception with BrandStateSelectView view (select_clothes_states): {e}")
 
 
 class ClothesStatesSelect(discord.ui.Select):
     """
     Represents the clothes states selector.
     """
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Clothes states selector
+        """
         options=[discord.SelectOption(label=state, value=state_id) for (state, state_id) in CLOTHES_STATES.items()]
         super().__init__(options=options, placeholder="Sélectionner les états des vêtements", max_values=len(options))
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction) -> None:
+        """
+        Called when the clothes states selector is closed
+        Args:
+            interaction: discord.Interaction
+
+        Returns: None
+
+        """
         await self.view.select_clothes_states(interaction, self.values)
