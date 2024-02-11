@@ -104,13 +104,13 @@ def define_commands(client, port) -> None:
 
                     logging.info(f"Success - association {association} successfully inserted in DB (request {request})")
 
-                    # Final step: run the task - add to requests dict to be stoppable
-                    request["_id"] = inserted_id
-                    logging.info(f"Running task for channel: {channel.id}, request: {request}")
-                    client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
-
-                    await interaction.followup.send(f"Recherche: {request}, association: {association} tourne désormais "
-                                                    f"en tâche de fond.", ephemeral=True)
+                    # # Final step: run the task - add to requests dict to be stoppable
+                    # request["_id"] = inserted_id
+                    # logging.info(f"Running task for channel: {channel.id}, request: {request}")
+                    # client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
+                    #
+                    # await interaction.followup.send(f"Recherche: {request}, association: {association} tourne désormais "
+                    #                                 f"en tâche de fond.", ephemeral=True)
 
                 else:
                     error_code = 2
@@ -171,6 +171,51 @@ def define_commands(client, port) -> None:
         logging.info(f"Hello! (user: {interaction.user}, user_id: {interaction.user.id})")
         await interaction.response.send_message("Hello !", ephemeral=True)
 
+    @client.tree.command(name="start_requests", description="Arrête toutes les recherches")
+    async def start_requests(interaction: discord.Interaction) -> None:
+        """
+        Starts all the requests
+        Args:
+            interaction: discord.Interaction
+
+        Returns: None
+
+        """
+        logging.info(f"Starting all requests - user: {interaction.user} (user_id: {interaction.user.id})")
+
+        await interaction.response.defer()
+        await client.setup_hook()
+        await interaction.followup.send("Toutes les recherches sont lancées.")
+
+        logging.info("All requests started successfully")
+
+    @client.tree.command(name="stop_requests", description="Arrête toutes les recherches")
+    async def stop_requests(interaction: discord.Interaction) -> None:
+        """
+        Stops all the requests
+        Args:
+            interaction: discord.Interaction
+
+        Returns: None
+
+        """
+        logging.info(f"Stopping all requests - user: {interaction.user} (user_id: {interaction.user.id})")
+
+        await interaction.response.defer()
+
+        tasks = client.running_requests.values()
+
+        for task in tasks:
+            task.cancel()
+
+        client.running_requests = {}
+        client.requests = {}
+        client.channels = {}
+
+        await interaction.followup.send("Toutes les recherches sont arrêtées.")
+
+        logging.info("All requests stopped successfully")
+
     @client.tree.command(name="sync", description="Admin seulement")
     async def sync(interaction: discord.Interaction) -> None:
         """
@@ -185,6 +230,6 @@ def define_commands(client, port) -> None:
             logging.info('Command tree synced')
             await interaction.followup.send("Sync done.", ephemeral=True)
         else:
-            logging.warning(f"Command tree ync attempted by user: {interaction.user} (user_id: {interaction.user.id})")
+            logging.warning(f"Command tree sync attempted by user: {interaction.user} (user_id: {interaction.user.id})")
             await interaction.response.send_message("Vous n'êtes pas Neeko (:",
                                                     ephemeral=True)
