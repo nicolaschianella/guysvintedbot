@@ -91,6 +91,7 @@ def define_commands(client, port) -> None:
                     await interaction.followup.send("Insertion réussie !", ephemeral=True)
 
                     # Final step: run the task - add to requests dict to be stoppable
+                    request["_id"] = inserted_id
                     client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
 
                 else:
