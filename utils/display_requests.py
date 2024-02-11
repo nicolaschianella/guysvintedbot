@@ -28,11 +28,12 @@ class Buttons(discord.ui.View):
         self.add_item(discord.ui.Button(label="Détails", url=self.url))
 
     @discord.ui.button(label="✅ AutoBuy", style=discord.ButtonStyle.blurple)
-    async def autobuy(self, interaction: discord.Interaction) -> None:
+    async def autobuy(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
         """
         'AutoBuy' button
         Args:
             interaction: discord.Interaction
+            button: button: discord.ui.Button
 
         Returns: None
 
