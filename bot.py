@@ -205,13 +205,20 @@ class GuysVintedBot(discord.Client):
                 await asyncio.sleep(int(WAIT_TIME))
 
         except Exception as e:
+            logging.error(f"There was an issue with request: {request} (channel_id: {channel_id}): {e}")
+
+            # Try to stop the running task (if launched)
+            try:
+                self.running_requests[str(request["_id"])].cancel()
+                logging.error(f"Removed task - request: {request} (channel_id: {channel_id})")
+
+            except Exception as e:
+                logging.error(f"Task for request: {request} (channel_id: {channel_id}) was never launched")
+
             # Remove keys from the dicts
             self.running_requests.pop(str(request["_id"]))
             self.requests.pop(str(request["_id"]))
             self.channels.pop(str(request["_id"]))
-
-            logging.error(f"There was an issue with request: {request} (channel_id: {channel_id}): {e}")
-            logging.error(f"Removed task - request: {request} (channel_id: {channel_id})")
 
             # Write a message in the request channel (local only)
             await channel.send(f"Il y a eu un souci avec cette recherche. Erreur: {e}")
