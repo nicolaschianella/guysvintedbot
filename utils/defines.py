@@ -26,7 +26,7 @@ REQUESTS_CHANNEL_IDS_ROUTE = "api/operations/get_active_requests_and_channels"
 # In which category we create new text channel upon saving a clothe request
 CATEGORY = "buybuybuybuy"
 # Time in seconds to wait for a new API call to get_clothes
-WAIT_TIME = "1"
+WAIT_TIME = "5"
 # API parameter, in case too low can be increased up to 96
 PER_PAGE = "10"
 # In case we could not retrieve clothe images
