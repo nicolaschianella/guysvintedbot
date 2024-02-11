@@ -61,44 +61,50 @@ def define_commands(client, port) -> None:
             "status_ids": clothes_states
         }
 
-        # Attempt the request save
-        save_request = requests.post(f"{API_HOST}:{port}/{UPDATE_REQUESTS_ROUTE}",
-                                     data=json.dumps({"added": [request]}))
+        try:
+            # Attempt the request save
+            save_request = requests.post(f"{API_HOST}:{port}/{UPDATE_REQUESTS_ROUTE}",
+                                         data=json.dumps({"added": [request]}))
 
-        # Success
-        if save_request.status_code == 200:
-            # Get request inserted id
-            inserted_id = json.loads(save_request.json()["data"])["added"][0]
+            # Success
+            if save_request.status_code == 200:
+                # Get request inserted id
+                inserted_id = json.loads(save_request.json()["data"])["added"][0]
 
-            # Create new channel
-            guild = client.guilds[0]
-            channel = await guild.create_text_channel(channel_name,
-                                                      category=discord.utils.get(guild.categories, name=CATEGORY))
+                # Create new channel
+                guild = client.guilds[0]
+                channel = await guild.create_text_channel(channel_name,
+                                                          category=discord.utils.get(guild.categories, name=CATEGORY))
 
-            # Associate request id and channel id
-            association = {"request_id": inserted_id,
-                           "request_name": name,
-                           "channel_id": channel.id,
-                           "channel_name": channel.name}
+                # Associate request id and channel id
+                association = {"request_id": inserted_id,
+                               "request_name": name,
+                               "channel_id": channel.id,
+                               "channel_name": channel.name}
 
-            # Call the API to insert the association
-            add_association = requests.post(f"{API_HOST}:{port}/{ADD_ASSOCIATION_ROUTE}",
-                                            data=json.dumps(association))
+                # Call the API to insert the association
+                add_association = requests.post(f"{API_HOST}:{port}/{ADD_ASSOCIATION_ROUTE}",
+                                                data=json.dumps(association))
 
-            # Health check and run task
-            if add_association.status_code == 200:
-                await interaction.followup.send("Insertion réussie !", ephemeral=True)
+                # Health check and run task
+                if add_association.status_code == 200:
+                    await interaction.followup.send("Insertion réussie !", ephemeral=True)
 
-                # Final step: run the task - add to requests dict to be stoppable
-                client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
+                    # Final step: run the task - add to requests dict to be stoppable
+                    client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
+
+                else:
+                    await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
+                                                    "de données, veuillez réessayer. [2]", ephemeral=True)
 
             else:
                 await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
-                                                "de données, veuillez réessayer. [2]", ephemeral=True)
+                                                "de données, veuillez réessayer. [1]", ephemeral=True)
 
-        else:
+        except Exception as e:
             await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
-                                            "de données, veuillez réessayer. [1]", ephemeral=True)
+                                            "de données, veuillez réessayer. [3]", ephemeral=True)
+
 
     @client.tree.command(name="get_running_requests", description="Voir les recherches en cours")
     async def get_running_requests(interaction: discord.Interaction) -> None:
