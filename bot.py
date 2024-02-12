@@ -20,6 +20,7 @@ from discord import app_commands
 from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE, \
                             USER_INFOS_ROUTE, GET_IMAGES_URL_ROUTE, NO_IMAGE_AVAILABLE_URL
 from utils.display_requests import Buttons
+from concurrent.futures import ThreadPoolExecutor
 
 
 class GuysVintedBot(discord.Client):
@@ -58,6 +59,21 @@ class GuysVintedBot(discord.Client):
         """
         logging.info(f"Ready & logged in as {self.user}")
 
+    def get_clothes_api(self, request: dict) -> requests.Response:
+        """
+        Embedded function to be executed in a separated thread. Performs a clothe request to the API
+        Args:
+            request: dict, clothe request to get
+
+        Returns: requests.Response, API response
+
+        """
+        # Request the API to get new clothes
+        response = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_ROUTE}",
+                                data=json.dumps(request))
+
+        return response
+
     async def get_clothes(self, request: dict, channel_id: int) -> None:
         """
         Sends new clothes using request and post in channels.
@@ -83,9 +99,9 @@ class GuysVintedBot(discord.Client):
         try:
             # Infinite loop
             while not self.is_closed():
-                # Request the API to get new clothes
-                response = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_ROUTE}",
-                                        data=json.dumps(request))
+                # Run in a separate thread to not freeze the bot
+                loop = asyncio.get_event_loop()
+                response = await loop.run_in_executor(ThreadPoolExecutor(), self.get_clothes_api, request)
 
                 if response.status_code != 200:
                     logging.error(f"Could not retrieve clothes for request: {request} (channel_id: {channel_id})")
