@@ -182,12 +182,17 @@ def define_commands(client, port) -> None:
 
         """
         logging.info(f"Starting all requests - user: {interaction.user} (user_id: {interaction.user.id})")
-
         await interaction.response.defer()
-        await client.setup_hook()
-        await interaction.followup.send("Toutes les recherches sont lancées.")
 
-        logging.info("All requests started successfully")
+        if client.requests == {}:
+
+            await client.setup_hook()
+            await interaction.followup.send("Toutes les recherches sont lancées.")
+
+            logging.info("All requests started successfully")
+
+        else:
+            await interaction.followup.send("Les recherches sont déjà lancées.")
 
     @client.tree.command(name="stop_requests", description="Arrête toutes les recherches")
     async def stop_requests(interaction: discord.Interaction) -> None:
