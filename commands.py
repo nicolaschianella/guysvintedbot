@@ -104,13 +104,13 @@ def define_commands(client, port) -> None:
 
                     logging.info(f"Success - association {association} successfully inserted in DB (request {request})")
 
-                    # # Final step: run the task - add to requests dict to be stoppable
-                    # request["_id"] = inserted_id
-                    # logging.info(f"Running task for channel: {channel.id}, request: {request}")
-                    # client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
-                    #
-                    # await interaction.followup.send(f"Recherche: {request}, association: {association} tourne désormais "
-                    #                                 f"en tâche de fond.", ephemeral=True)
+                    # Final step: run the task - add to requests dict to be stoppable
+                    request["_id"] = inserted_id
+                    logging.info(f"Running task for channel: {channel.id}, request: {request}")
+                    client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
+
+                    await interaction.followup.send(f"Recherche: {request}, association: {association} tourne désormais "
+                                                    f"en tâche de fond.", ephemeral=True)
 
                 else:
                     error_code = 2
@@ -149,10 +149,9 @@ def define_commands(client, port) -> None:
 
         msg = ""
 
-        for running_request_id in client.running_requests.keys():
-            running_request = client.requests[running_request_id].copy()
-            running_request.pop("_id")
-            msg += f"_id: {running_request_id}, recherche: {running_request}\n\n"
+        for request, channel_id in zip(client.requests.values(), client.channels.values()):
+            channel_name = client.get_channel(channel_id).name
+            msg += f"Nom de salon: {channel_name}, nom de recherche: {request['name']}\n"
 
         if not msg:
             msg = "Aucune recherche active."
