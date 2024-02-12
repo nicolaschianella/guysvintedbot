@@ -15,7 +15,7 @@ import json
 import logging
 
 from utils.add_requests import AddRequestsForm
-from utils.utils import reformat_clothes_states
+from utils.utils import reformat_list_strings
 from utils.defines import API_HOST, UPDATE_REQUESTS_ROUTE, ADD_ASSOCIATION_ROUTE, PER_PAGE, CATEGORY
 
 
@@ -51,7 +51,7 @@ def define_commands(client, port) -> None:
         clothes_states = add_requests_form.clothes_states
 
         # Reformat clothes_states
-        clothes_states = reformat_clothes_states(clothes_states)
+        clothes_states = reformat_list_strings(clothes_states)
 
         # Build dict to be sent to the API
         request = {
@@ -106,8 +106,9 @@ def define_commands(client, port) -> None:
 
                     # Final step: run the task - add to requests dict to be stoppable
                     request["_id"] = inserted_id
-                    logging.info(f"Running task for channel: {channel.id}, request: {request}")
-                    client.running_requests[inserted_id] = client.loop.create_task(client.get_clothes(request, channel.id))
+                    logging.info(f"Running task for channel: {channel}, request: {request}")
+                    client.requests[inserted_id] = request
+                    client.channels[inserted_id] = channel
 
                     await interaction.followup.send(f"Recherche: {request}, association: {association} tourne désormais "
                                                     f"en tâche de fond.", ephemeral=True)
@@ -149,8 +150,8 @@ def define_commands(client, port) -> None:
 
         msg = ""
 
-        for request, channel_id in zip(client.requests.values(), client.channels.values()):
-            channel_name = client.get_channel(channel_id).name
+        for request, channel in zip(client.requests.values(), client.channels.values()):
+            channel_name = channel.name
             msg += f"Nom de salon: {channel_name}, nom de recherche: {request['name']}\n"
 
         if not msg:
@@ -170,7 +171,7 @@ def define_commands(client, port) -> None:
         logging.info(f"Hello! (user: {interaction.user}, user_id: {interaction.user.id})")
         await interaction.response.send_message("Hello !", ephemeral=True)
 
-    @client.tree.command(name="start_requests", description="Arrête toutes les recherches")
+    @client.tree.command(name="start_requests", description="Démarre toutes les recherches")
     async def start_requests(interaction: discord.Interaction) -> None:
         """
         Starts all the requests
@@ -202,12 +203,14 @@ def define_commands(client, port) -> None:
 
         await interaction.response.defer()
 
-        tasks = client.running_requests.values()
+        # Cancel main task
+        try:
+            client.task.cancel()
 
-        for task in tasks:
-            task.cancel()
+        except Exception as e:
+            logging.warning(f"Client task was not launched. Error: {e}")
 
-        client.running_requests = {}
+        # Reset dicts
         client.requests = {}
         client.channels = {}
 
