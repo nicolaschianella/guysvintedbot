@@ -52,8 +52,9 @@ class GuysVintedBot(discord.Client):
         # Acquire requests and channel_ids
         clothe_requests, channel_ids = await self.load_all_active_requests_and_channels()
 
-        # Run tasks
-        self.task = self.loop.create_task(self.get_clothes(clothe_requests, channel_ids))
+        if clothe_requests:
+            # Run tasks
+            self.task = self.loop.create_task(self.get_clothes(clothe_requests, channel_ids))
 
     async def on_ready(self) -> None:
         """
@@ -66,8 +67,6 @@ class GuysVintedBot(discord.Client):
         """
         Embedded function to be executed in a separated thread. Performs a global clothe request to the API
         The used request contains all the referenced brands and clothes states
-        Args:
-            request: dict, clothe request to get
 
         Returns: requests.Response, API response
 
