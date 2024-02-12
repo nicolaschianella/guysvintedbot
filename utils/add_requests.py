@@ -31,21 +31,18 @@ class AddRequestsForm(discord.ui.Modal,
     # Clothe request search text
     search_test = discord.ui.TextInput(
         label="Mots clés de la recherche",
-        placeholder="Ex: écharpe",
-        required=False
+        placeholder="Ex: écharpe"
     )
     # Minimal price to filter on
     price_from = discord.ui.TextInput(
         label="Prix minimum [€] - hors fees",
-        placeholder="Ex: 0",
-        required=False
+        placeholder="Ex: 0"
     )
     # Maximal price to filter on
     # Minimal price to filter on
     price_to = discord.ui.TextInput(
         label="Prix maximum [€] - hors fees",
-        placeholder="Ex: 100",
-        required=False
+        placeholder="Ex: 100"
     )
     # Filtered brand
     brand = None
