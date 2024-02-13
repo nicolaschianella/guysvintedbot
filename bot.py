@@ -68,7 +68,7 @@ class GuysVintedBot(discord.Client):
         """
         logging.info(f"Ready & logged in as {self.user}")
 
-    def get_clothes_api(self) -> requests.Response:
+    def get_clothes_api(self, brand_ids, status_ids) -> requests.Response:
         """
         Embedded function to be executed in a separated thread. Performs a global clothe request to the API
         The used request contains all the referenced brands and clothes states
@@ -80,8 +80,8 @@ class GuysVintedBot(discord.Client):
         # Request the API to get new clothes
         response = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_ROUTE}",
                                 data=json.dumps({"per_page": PER_PAGE,
-                                                 "brand_ids": reformat_list_strings(list(BRANDS.values())),
-                                                 "status_ids": reformat_list_strings(list(CLOTHES_STATES.values()))}))
+                                                 "brand_ids": brand_ids,
+                                                 "status_ids": status_ids}))
 
         return response
 
@@ -247,6 +247,10 @@ class GuysVintedBot(discord.Client):
         # Define logs channel in case something wrong happens
         logs_channel = self.get_channel(int(os.getenv("LOGS_CHANNEL_ID")))
 
+        # Define filters on brands and clothes status
+        brand_ids = reformat_list_strings(list(BRANDS.values()))
+        status_ids = reformat_list_strings(list(CLOTHES_STATES.values()))
+
         try:
             # Infinite loop
             while not self.is_closed():
@@ -254,7 +258,7 @@ class GuysVintedBot(discord.Client):
                 start = time.time()
                 # Run in a separate thread to not freeze the bot - global clothes search
                 loop = asyncio.get_event_loop()
-                response = await loop.run_in_executor(ThreadPoolExecutor(), self.get_clothes_api)
+                response = await loop.run_in_executor(ThreadPoolExecutor(), self.get_clothes_api, brand_ids, status_ids)
 
                 if response.status_code != 200:
                     logging.error(f"Could not retrieve clothes for global request, response: {response.text}")
@@ -277,6 +281,8 @@ class GuysVintedBot(discord.Client):
                 # If new clothes we find if there are matching requests (coded in separate threads)
                 # If yes we post clothes in the corresponding channel (and global one) and update cache
                 if new_clothes:
+                    logging.info(f"Found {len(new_clothes)} new clothe(s) matching global filters in this API call")
+
                     await asyncio.gather(*[self.find_matching_and_post(request, new_clothes)
                                            for request in list(self.requests.values())])
 
