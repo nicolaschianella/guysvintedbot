@@ -104,14 +104,23 @@ def define_commands(client, port) -> None:
 
                     logging.info(f"Success - association {association} successfully inserted in DB (request {request})")
 
-                    # Final step: run the task - add to requests dict to be stoppable
-                    request["_id"] = inserted_id
-                    logging.info(f"Running task for channel: {channel}, request: {request}")
-                    client.requests[inserted_id] = request
-                    client.channels[inserted_id] = channel
+                    # Check if main loop is running and send custom message
+                    if client.task:
+                        # Final step: run the task - add to requests dict to be stoppable
+                        request["_id"] = inserted_id
+                        client.requests[inserted_id] = request
+                        client.channels[inserted_id] = channel
 
-                    await interaction.followup.send(f"Recherche: {request}, association: {association} tourne désormais "
-                                                    f"en tâche de fond.", ephemeral=True)
+                        logging.info(f"Running task for channel: {channel}, request: {request}")
+                        await interaction.followup.send(f"Recherche: {request}, association: {association} tourne désormais "
+                                                        f"en tâche de fond.", ephemeral=True)
+
+                    else:
+                        logging.info(f"Main loop is off. Request: {request}, channel: {channel} registered but not "
+                                     f"running yet.")
+                        await interaction.followup.send(f"La boucle principale est arrêtée. Veuillez lancer "
+                                                        f"les recherches (avec /start_requests) pour appliquer les "
+                                                        f"modifications.", ephemeral=True)
 
                 else:
                     error_code = 2
@@ -159,7 +168,7 @@ def define_commands(client, port) -> None:
 
         logging.info(f"Msg: {msg}")
 
-        await interaction.followup.send(msg)
+        await interaction.followup.send(msg, ephemeral=True)
 
     @client.tree.command(name="hello", description="Check si bot vivant")
     async def hello(interaction: discord.Interaction) -> None:
@@ -184,15 +193,14 @@ def define_commands(client, port) -> None:
         logging.info(f"Starting all requests - user: {interaction.user} (user_id: {interaction.user.id})")
         await interaction.response.defer()
 
-        if client.requests == {}:
-
+        if not client.task:
             await client.setup_hook()
-            await interaction.followup.send("Toutes les recherches sont lancées.")
+            await interaction.followup.send("Toutes les recherches sont lancées.", ephemeral=True)
 
             logging.info("All requests started successfully")
 
         else:
-            await interaction.followup.send("Les recherches sont déjà lancées.")
+            await interaction.followup.send("Les recherches sont déjà lancées.", ephemeral=True)
 
     @client.tree.command(name="stop_requests", description="Arrête toutes les recherches")
     async def stop_requests(interaction: discord.Interaction) -> None:
@@ -215,11 +223,12 @@ def define_commands(client, port) -> None:
         except Exception as e:
             logging.warning(f"Client task was not launched. Error: {e}")
 
-        # Reset dicts
+        # Reset dicts and task
+        client.task = ""
         client.requests = {}
         client.channels = {}
 
-        await interaction.followup.send("Toutes les recherches sont arrêtées.")
+        await interaction.followup.send("Toutes les recherches sont arrêtées.", ephemeral=True)
 
         logging.info("All requests stopped successfully")
 
