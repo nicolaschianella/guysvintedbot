@@ -54,7 +54,12 @@ class GuysVintedBot(discord.Client):
 
         if clothe_requests:
             # Run tasks
+            logging.info(f"Running tasks for requests: {clothe_requests}, channel_ids: {channel_ids}")
             self.task = self.loop.create_task(self.get_clothes(clothe_requests, channel_ids))
+
+        else:
+            # Log message
+            logging.info("No requests found - loop not started")
 
     async def on_ready(self) -> None:
         """
