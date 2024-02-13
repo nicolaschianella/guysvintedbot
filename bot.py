@@ -41,6 +41,8 @@ class GuysVintedBot(discord.Client):
         self.port = port
         self.requests = {}
         self.channels = {}
+        self.all_clothes_channel = ""
+        self.logs_channel = ""
         self.task = ""
         self.tree = app_commands.CommandTree(self)
 
@@ -66,6 +68,10 @@ class GuysVintedBot(discord.Client):
         Called when the bot starts. Simple log message.
         :return: None
         """
+        # Channels need to be defined here to not get NoneType
+        self.all_clothes_channel = self.get_channel(int(os.getenv("ALL_CLOTHES_CHANNEL_ID")))
+        self.logs_channel = self.get_channel(int(os.getenv("LOGS_CHANNEL_ID")))
+
         logging.info(f"Ready & logged in as {self.user}")
 
     def get_clothes_api(self, brand_ids, status_ids) -> requests.Response:
@@ -186,7 +192,7 @@ class GuysVintedBot(discord.Client):
                 api_time = datetime.datetime.strptime(clothe["created_at_ts"], "%Y-%m-%dT%H:%M:%S%z")
                 api_time_ts = int(datetime.datetime.timestamp(api_time))
             except Exception as e:
-                logging.warning(f"Exception encountered during date formatting: {e}")
+                logging.warning(f"Exception for clothe {clothe} encountered during date formatting: {e}")
                 api_time_ts = "NA"
 
             # Custom title in case we may have suspicious pictures
@@ -218,11 +224,11 @@ class GuysVintedBot(discord.Client):
             await channel.send(embeds=embeds,
                                view=Buttons(url=clothe["url"],
                                             ratio=ratio,
-                                            log_channel=self.get_channel(int(os.getenv("LOGS_CHANNEL_ID")))))
-            await self.get_channel(int(os.getenv("ALL_CLOTHES_CHANNEL_ID"))).send(embeds=embeds,
-                                                                                  view=Buttons(url=clothe["url"],
-                                                                                               ratio=ratio,
-                                                                                               log_channel=self.get_channel(int(os.getenv("LOGS_CHANNEL_ID")))))
+                                            log_channel=self.logs_channel))
+            await self.all_clothes_channel.send(embeds=embeds,
+                                                view=Buttons(url=clothe["url"],
+                                                             ratio=ratio,
+                                                             log_channel=self.logs_channel))
 
             all_embeds.append(embeds)
 
@@ -250,9 +256,6 @@ class GuysVintedBot(discord.Client):
         # Minimal waiting time
         wait_time = int(WAIT_TIME)
 
-        # Define logs channel in case something wrong happens
-        logs_channel = self.get_channel(int(os.getenv("LOGS_CHANNEL_ID")))
-
         # Define filters on brands and clothes status
         brand_ids = reformat_list_strings(list(BRANDS.values()))
         status_ids = reformat_list_strings(list(CLOTHES_STATES.values()))
@@ -268,7 +271,7 @@ class GuysVintedBot(discord.Client):
 
                 if response.status_code != 200:
                     logging.error(f"Could not retrieve clothes for global request, response: {response.text}")
-                    await logs_channel.send("Les vêtements ne peuvent plus être récupérés - erreur [1]")
+                    await self.logs_channel.send("Les recherches ont été interrompues après un souci - erreur [1]")
                     raise Exception(f"Could not retrieve clothes for global request")
 
                 # Load clothes
@@ -326,7 +329,7 @@ class GuysVintedBot(discord.Client):
             self.channels = {}
 
             # Write a message in the request channel (local only)
-            await logs_channel.send("Les recherches ont été interrompues après un souci - erreur [2]")
+            await self.logs_channel.send("Les recherches ont été interrompues après un souci - erreur [2]")
 
     async def load_all_active_requests_and_channels(self) -> tuple:
             """
