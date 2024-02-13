@@ -215,8 +215,14 @@ class GuysVintedBot(discord.Client):
                                 inline=True)
                 embeds.append(embed)
 
-            await channel.send(embeds=embeds, view=Buttons(url=clothe["url"]))
-            await self.get_channel(int(os.getenv("ALL_CLOTHES_CHANNEL_ID"))).send(embeds=embeds, view=Buttons(url=clothe["url"]))
+            await channel.send(embeds=embeds,
+                               view=Buttons(url=clothe["url"],
+                                            ratio=ratio,
+                                            log_channel=self.get_channel(int(os.getenv("LOGS_CHANNEL_ID")))))
+            await self.get_channel(int(os.getenv("ALL_CLOTHES_CHANNEL_ID"))).send(embeds=embeds,
+                                                                                  view=Buttons(url=clothe["url"],
+                                                                                               ratio=ratio,
+                                                                                               log_channel=self.get_channel(int(os.getenv("LOGS_CHANNEL_ID")))))
 
             all_embeds.append(embeds)
 
