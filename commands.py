@@ -101,6 +101,8 @@ def define_commands(client, port) -> None:
                 if add_association.status_code == 200:
                     await interaction.followup.send(f"Insertion réussie !\nRecherche: {request}\n"
                                                     f"Association: {association}", ephemeral=True)
+                    await client.logs_channel.send(f"Insertion réussie !\nRecherche: {request}\n"
+                                                    f"Association: {association}")
 
                     logging.info(f"Success - association {association} successfully inserted in DB (request {request})")
 
@@ -127,12 +129,16 @@ def define_commands(client, port) -> None:
                     logging.error(f"Could not insert association: {association} in DB (displayed error code "
                                   f"[{error_code}])")
                     await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
+                                                    f"de données, veuillez réessayer. [{error_code}]", ephemeral=True)
+                    await client.logs_channel.send("Il y a eu un souci avec l'insertion dans la base "
                                                     f"de données, veuillez réessayer. [{error_code}]")
 
             else:
                 error_code = 1
                 logging.error(f"Could not insert request: {request} in DB (displayed error code [{error_code}])")
                 await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
+                                                f"de données, veuillez réessayer. [{error_code}]", ephemeral=True)
+                await client.logs_channel.send("Il y a eu un souci avec l'insertion dans la base "
                                                 f"de données, veuillez réessayer. [{error_code}]")
 
         except Exception as e:
@@ -140,6 +146,8 @@ def define_commands(client, port) -> None:
             logging.error(f"There was an exception while saving request {request} in DB: {e}")
             logging.error(f"Displayed error code [{error_code}]")
             await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
+                                            f"de données, veuillez réessayer. [{error_code}]", ephemeral=True)
+            await client.logs_channel.send("Il y a eu un souci avec l'insertion dans la base "
                                             f"de données, veuillez réessayer. [{error_code}]")
 
 
@@ -168,7 +176,7 @@ def define_commands(client, port) -> None:
 
         logging.info(f"Msg: {msg}")
 
-        await interaction.followup.send(msg, ephemeral=True)
+        await interaction.followup.send(msg)
 
     @client.tree.command(name="hello", description="Check si bot vivant")
     async def hello(interaction: discord.Interaction) -> None:
@@ -195,12 +203,12 @@ def define_commands(client, port) -> None:
 
         if not client.task:
             await client.setup_hook()
-            await interaction.followup.send("Toutes les recherches sont lancées.", ephemeral=True)
+            await interaction.followup.send("Toutes les recherches sont lancées.")
 
             logging.info("All requests started successfully")
 
         else:
-            await interaction.followup.send("Les recherches sont déjà lancées.", ephemeral=True)
+            await interaction.followup.send("Les recherches sont déjà lancées.")
 
     @client.tree.command(name="stop_requests", description="Arrête toutes les recherches")
     async def stop_requests(interaction: discord.Interaction) -> None:
@@ -228,7 +236,7 @@ def define_commands(client, port) -> None:
         client.requests = {}
         client.channels = {}
 
-        await interaction.followup.send("Toutes les recherches sont arrêtées.", ephemeral=True)
+        await interaction.followup.send("Toutes les recherches sont arrêtées.")
 
         logging.info("All requests stopped successfully")
 
