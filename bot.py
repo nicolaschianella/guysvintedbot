@@ -21,7 +21,7 @@ import logging
 from discord import app_commands
 from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE, \
                             USER_INFOS_ROUTE, GET_IMAGES_URL_ROUTE, NO_IMAGE_AVAILABLE_URL, BRANDS, CLOTHES_STATES, \
-                              FUZZ_RATIO
+                              FUZZ_RATIO, GET_CLOTHES_FROM_STOCK_ROUTE
 from utils.display_requests import BuyButtons, StockButtons
 from utils.utils import reformat_list_strings
 from concurrent.futures import ThreadPoolExecutor
@@ -44,6 +44,7 @@ class GuysVintedBot(discord.Client):
         self.all_clothes_channel = ""
         self.logs_channel = ""
         self.stock_channel = ""
+        self.clothes_ids = self.get_clothes_ids_in_stock()
         self.task = ""
         self.tree = app_commands.CommandTree(self)
 
@@ -52,9 +53,8 @@ class GuysVintedBot(discord.Client):
         Called when the bot starts. Launches all clothes requests and associated channels to post.
         :return: None
         """
-        # Get stock items to enable buttons
-        # TODO: get clothe_id from stock and activate stock buttons this way
-        for clothe_id in [4101618377, 4101618918]:
+        # Enable stock buttons on startup
+        for clothe_id in self.clothes_ids:
             self.add_view(StockButtons(clothe_id=clothe_id,
                                        port=self.port))
 
@@ -81,6 +81,31 @@ class GuysVintedBot(discord.Client):
         self.stock_channel = self.get_channel(int(os.getenv("STOCK_CHANNEL_ID")))
 
         logging.info(f"Ready & logged in as {self.user}")
+
+    def get_clothes_ids_in_stock(self) -> list[str]:
+        """
+        Get all ids of clothes in stock
+        Returns: list[str], list of found clothes ids
+
+        """
+        # API call
+        clothes_in_stock = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_FROM_STOCK_ROUTE}",
+                                        data=json.dumps({"which": "in_stock"}))
+
+        # Case success
+        if clothes_in_stock.status_code == 200:
+            stock_clothes = json.loads(clothes_in_stock.json()["data"])["found_clothes"]
+            clothes_ids = [clothe["clothe_id"] for clothe in stock_clothes if clothe["state"] == "in_stock"]
+
+            logging.info(f"Found following clothes ids (in_stock mode): {clothes_ids}")
+
+            return clothes_ids
+
+        # Case no success - end the program
+        else:
+            logging.error(f"There was an issue while retrieving in_stock clothes (API status_code: "
+                          f"{clothes_in_stock.status_code})")
+            sys.exit(1)
 
     def get_clothes_api(self, brand_ids, status_ids) -> requests.Response:
         """
