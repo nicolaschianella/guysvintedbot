@@ -22,7 +22,7 @@ from discord import app_commands
 from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE, \
                             USER_INFOS_ROUTE, GET_IMAGES_URL_ROUTE, NO_IMAGE_AVAILABLE_URL, BRANDS, CLOTHES_STATES, \
                               FUZZ_RATIO
-from utils.display_requests import BuyButtons
+from utils.display_requests import BuyButtons, StockButtons
 from utils.utils import reformat_list_strings
 from concurrent.futures import ThreadPoolExecutor
 from thefuzz import fuzz
@@ -43,6 +43,7 @@ class GuysVintedBot(discord.Client):
         self.channels = {}
         self.all_clothes_channel = ""
         self.logs_channel = ""
+        self.stock_channel = ""
         self.task = ""
         self.tree = app_commands.CommandTree(self)
 
@@ -71,6 +72,7 @@ class GuysVintedBot(discord.Client):
         # Channels need to be defined here to not get NoneType
         self.all_clothes_channel = self.get_channel(int(os.getenv("ALL_CLOTHES_CHANNEL_ID")))
         self.logs_channel = self.get_channel(int(os.getenv("LOGS_CHANNEL_ID")))
+        self.stock_channel = self.get_channel(int(os.getenv("STOCK_CHANNEL_ID")))
 
         logging.info(f"Ready & logged in as {self.user}")
 
@@ -222,13 +224,21 @@ class GuysVintedBot(discord.Client):
                 embeds.append(embed)
 
             await channel.send(embeds=embeds,
-                               view=BuyButtons(url=clothe["url"],
+                               view=BuyButtons(request_id=str(request["_id"]),
+                                               clothe=clothe,
+                                               embeds=embeds,
                                                ratio=ratio,
-                                               log_channel=self.logs_channel))
+                                               logs_channel=self.logs_channel,
+                                               stock_channel=self.stock_channel,
+                                               port=self.port))
             await self.all_clothes_channel.send(embeds=embeds,
-                                                view=BuyButtons(url=clothe["url"],
+                                                view=BuyButtons(request_id=str(request["_id"]),
+                                                                clothe=clothe,
+                                                                embeds=embeds,
                                                                 ratio=ratio,
-                                                                log_channel=self.logs_channel))
+                                                                logs_channel=self.logs_channel,
+                                                                stock_channel=self.stock_channel,
+                                                                port=self.port))
 
             all_embeds.append(embeds)
 
@@ -271,7 +281,7 @@ class GuysVintedBot(discord.Client):
 
                 if response.status_code != 200:
                     logging.error(f"Could not retrieve clothes for global request, response: {response.text}")
-                    await self.logs_channel.send("Les recherches ont été interrompues après un souci - erreur [1]")
+                    await self.logs_channel.send("⚠️ Les recherches ont été interrompues après un souci - erreur [1]")
                     raise Exception(f"Could not retrieve clothes for global request")
 
                 # Load clothes
@@ -320,7 +330,7 @@ class GuysVintedBot(discord.Client):
             self.reset_global_task()
 
             # Write a message in the request channel (local only)
-            await self.logs_channel.send("Les recherches ont été interrompues après un souci - erreur [2]")
+            await self.logs_channel.send("⚠️ Les recherches ont été interrompues après un souci - erreur [2]")
 
     def load_all_active_requests_and_channels(self) -> tuple:
             """
