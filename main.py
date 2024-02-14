@@ -51,6 +51,6 @@ if __name__ == "__main__":
 
     load_dotenv()
     TOKEN, GUILD_ID = os.getenv('DISCORD_TOKEN'), os.getenv('GUILD_ID')
-    client = GuysVintedBot(intents=discord.Intents.all(), guild_id=GUILD_ID, port=args.port)
+    client = GuysVintedBot(intents=discord.Intents.all(), guild_id=GUILD_ID, port=int(args.port))
     define_commands(client, args.port)
     client.run(TOKEN)
