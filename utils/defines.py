@@ -25,6 +25,8 @@ GET_IMAGES_URL_ROUTE = "api/operations/get_images_url"
 REQUESTS_CHANNEL_IDS_ROUTE = "api/operations/get_active_requests_and_channels"
 # Route to add clothe in stock
 ADD_CLOTHE_IN_STOCK_ROUTE = "api/operations/add_clothe_in_stock"
+# Route to get clothes from stock
+GET_CLOTHES_FROM_STOCK_ROUTE = "api/operations/get_clothes_from_stock"
 # In which category we create new text channel upon saving a clothe request
 CATEGORY = "buybuybuybuy"
 # Time in seconds to wait for a new API call to get_clothes
