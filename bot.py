@@ -52,6 +52,12 @@ class GuysVintedBot(discord.Client):
         Called when the bot starts. Launches all clothes requests and associated channels to post.
         :return: None
         """
+        # Get stock items to enable buttons
+        # TODO: get clothe_id from stock and activate stock buttons this way
+        for clothe_id in [4101618377, 4101618918]:
+            self.add_view(StockButtons(clothe_id=clothe_id,
+                                       port=self.port))
+
         # Acquire requests and channel_ids
         clothe_requests, channel_ids = self.load_all_active_requests_and_channels()
 
