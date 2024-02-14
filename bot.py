@@ -82,7 +82,7 @@ class GuysVintedBot(discord.Client):
         Returns: requests.Response, API response
 
         """
-        logging.info("Send global clothes request")
+        logging.info("Sending global clothes request")
         # Request the API to get new clothes
         response = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_ROUTE}",
                                 data=json.dumps({"per_page": PER_PAGE,
@@ -316,17 +316,8 @@ class GuysVintedBot(discord.Client):
         except Exception as e:
             logging.error(f"There was an exception with the global request: {e}")
 
-            # Try to stop the running task (if launched)
-            try:
-                self.task.cancel()
-                logging.error("Removed global clothes requests task")
-
-            except Exception as e:
-                logging.error(f"Global clothes requests task was never launched. Error: {e}")
-
-            # Reset dicts
-            self.requests = {}
-            self.channels = {}
+            # Reset dicts and task
+            self.reset_global_task()
 
             # Write a message in the request channel (local only)
             await self.logs_channel.send("Les recherches ont été interrompues après un souci - erreur [2]")
@@ -365,3 +356,22 @@ class GuysVintedBot(discord.Client):
                               f"- ending program (exception: {e})")
                 sys.exit(1)
 
+    def reset_global_task(self) -> None:
+        """
+        Resets global task
+        Returns: None
+
+        """
+        # Try to stop the running task (if launched)
+        try:
+            self.task.cancel()
+            logging.info("Removed global clothes requests task")
+
+        except Exception as e:
+            logging.warning(f"Global clothes requests task was never launched. Error: {e}")
+
+        self.task = ""
+        self.requests = {}
+        self.channels = {}
+
+        logging.info("All requests stopped successfully")
