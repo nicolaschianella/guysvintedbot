@@ -12,7 +12,7 @@ import logging
 import discord
 
 
-class Buttons(discord.ui.View):
+class BuyButtons(discord.ui.View):
     """
     Represents buttons to show details, buy clothes or not pertinent
     """
