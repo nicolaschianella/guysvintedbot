@@ -224,21 +224,10 @@ def define_commands(client, port) -> None:
 
         await interaction.response.defer()
 
-        # Cancel main task
-        try:
-            client.task.cancel()
-
-        except Exception as e:
-            logging.warning(f"Client task was not launched. Error: {e}")
-
         # Reset dicts and task
-        client.task = ""
-        client.requests = {}
-        client.channels = {}
+        client.reset_global_task()
 
         await interaction.followup.send("Toutes les recherches sont arrêtées.")
-
-        logging.info("All requests stopped successfully")
 
     @client.tree.command(name="sync", description="Admin seulement")
     async def sync(interaction: discord.Interaction) -> None:
