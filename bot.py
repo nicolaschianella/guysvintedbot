@@ -52,7 +52,7 @@ class GuysVintedBot(discord.Client):
         :return: None
         """
         # Acquire requests and channel_ids
-        clothe_requests, channel_ids = await self.load_all_active_requests_and_channels()
+        clothe_requests, channel_ids = self.load_all_active_requests_and_channels()
 
         if clothe_requests:
             # Run tasks
@@ -322,7 +322,7 @@ class GuysVintedBot(discord.Client):
             # Write a message in the request channel (local only)
             await self.logs_channel.send("Les recherches ont été interrompues après un souci - erreur [2]")
 
-    async def load_all_active_requests_and_channels(self) -> tuple:
+    def load_all_active_requests_and_channels(self) -> tuple:
             """
             Loads all the active requests existing in the DB and associated channels ids.
             :return: tuple, two elements, first one is a list of requests (dict) and the second one the list
