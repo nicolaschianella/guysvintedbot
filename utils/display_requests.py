@@ -12,7 +12,7 @@ import discord
 import requests
 import json
 
-from utils.defines import API_HOST, ADD_CLOTHE_IN_STOCK_ROUTE
+from utils.defines import API_HOST, ADD_CLOTHE_IN_STOCK_ROUTE, GET_CLOTHES_FROM_STOCK_ROUTE
 
 
 class BuyButtons(discord.ui.View):
@@ -63,9 +63,35 @@ class BuyButtons(discord.ui.View):
         """
         await interaction.response.defer()
 
+        # Check if clothe in stock already
+        clothes_in_stock = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_FROM_STOCK_ROUTE}",
+                                        data=json.dumps({"which": "in_stock"}))
+
+        if clothes_in_stock.status_code == 200:
+            stock_clothes = json.loads(clothes_in_stock.json()["data"])["found_clothes"]
+            clothes_ids = [clothe["clothe_id"] for clothe in stock_clothes]
+
+            # Case clothe already in stock
+            if str(self.clothe["id"]) in clothes_ids:
+                logging.warning(f"Clothe already in stock (id: {self.clothe['id']})")
+
+                await interaction.followup.send(f"ℹ️ Vêtement déjà en stock: (nom: {self.clothe['title']}, "
+                                                f"url: {self.clothe['url']})", ephemeral=True)
+
+                return
+
+        else:
+            # Case API error
+            logging.error(f"Error getting clothes from stock, full response: {clothes_in_stock.text}")
+
+            await interaction.followup.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
+                                            f"nom: {self.clothe['title']}) car erreur du programme.", ephemeral=True)
+            await self.logs_channel.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
+                                            f"nom: {self.clothe['title']}) car erreur du programme.")
+            return
+
         logging.info(f"Processing autobuy for clothe: {self.clothe}")
 
-        # TODO: here add check if clothe already in stock
         # TODO: here add autobuy
         bought = True  # change with API response for autobuy
 
@@ -80,16 +106,8 @@ class BuyButtons(discord.ui.View):
             add_in_stock = requests.post(f"{API_HOST}:{self.port}/{ADD_CLOTHE_IN_STOCK_ROUTE}",
                                          data=json.dumps(self.clothe))
 
-            # Article already in stock? (duplicate clothe_id?) - notify the user and post in logs channel
-            if add_in_stock.status_code == 501:
-                logging.warning(f"Clothe already in stock (id: {self.clothe['id']})")
-                await interaction.followup.send(f"⚠️ [CRITIQUE] Vêtement déjà en stock: (nom: {self.clothe['title']}, "
-                                                f"url: {self.clothe['url']})", ephemeral=True)
-                await self.logs_channel.send(f"⚠️ [CRITIQUE] Vêtement déjà en stock: (nom: {self.clothe['title']}, "
-                                                f"url: {self.clothe['url']})")
-
             # Status OK - post in channels
-            elif add_in_stock.status_code == 200:
+            if add_in_stock.status_code == 200:
                 logging.info(f"Successfully added clothe to stock (id: {self.clothe['id']})")
 
                 await interaction.followup.send(f"✅ Achat bien effectué: {self.clothe['title']}", ephemeral=True)
