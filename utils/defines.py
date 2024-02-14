@@ -23,6 +23,8 @@ USER_INFOS_ROUTE = "api/operations/get_user_infos"
 GET_IMAGES_URL_ROUTE = "api/operations/get_images_url"
 # Route to get {requests: channel_ids}
 REQUESTS_CHANNEL_IDS_ROUTE = "api/operations/get_active_requests_and_channels"
+# Route to add clothe in stock
+ADD_CLOTHE_IN_STOCK_ROUTE = "api/operations/add_clothe_in_stock"
 # In which category we create new text channel upon saving a clothe request
 CATEGORY = "buybuybuybuy"
 # Time in seconds to wait for a new API call to get_clothes
