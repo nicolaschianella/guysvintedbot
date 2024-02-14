@@ -165,11 +165,11 @@ def define_commands(client, port) -> None:
 
         logging.info(f"Getting all running requests (user: {interaction.user}, user_id: {interaction.user.id})")
 
-        msg = "ℹ️ "
+        msg = ""
 
         for request, channel in zip(client.requests.values(), client.channels.values()):
             channel_name = channel.name
-            msg += f"Nom de salon: {channel_name}, nom de recherche: {request['name']}\n"
+            msg += f"ℹ️ Nom de salon: {channel_name}, nom de recherche: {request['name']}\n"
 
         if not msg:
             msg = "ℹ️ Aucune recherche active."
