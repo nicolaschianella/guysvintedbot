@@ -99,9 +99,9 @@ def define_commands(client, port) -> None:
 
                 # Health check and run task
                 if add_association.status_code == 200:
-                    await interaction.followup.send(f"Insertion réussie !\nRecherche: {request}\n"
+                    await interaction.followup.send(f"✅ Insertion réussie !\nRecherche: {request}\n"
                                                     f"Association: {association}", ephemeral=True)
-                    await client.logs_channel.send(f"Insertion réussie !\nRecherche: {request}\n"
+                    await client.logs_channel.send(f"✅ Insertion réussie !\nRecherche: {request}\n"
                                                     f"Association: {association}")
 
                     logging.info(f"Success - association {association} successfully inserted in DB (request {request})")
@@ -114,13 +114,13 @@ def define_commands(client, port) -> None:
                         client.channels[inserted_id] = channel
 
                         logging.info(f"Running task for channel: {channel}, request: {request}")
-                        await interaction.followup.send(f"Recherche: {request}, association: {association} tourne désormais "
+                        await interaction.followup.send(f"✅ Recherche: {request}, association: {association} tourne désormais "
                                                         f"en tâche de fond.", ephemeral=True)
 
                     else:
                         logging.info(f"Main loop is off. Request: {request}, channel: {channel} registered but not "
                                      f"running yet.")
-                        await interaction.followup.send(f"La boucle principale est arrêtée. Veuillez lancer "
+                        await interaction.followup.send(f"ℹ️ La boucle principale est arrêtée. Veuillez lancer "
                                                         f"les recherches (avec /start_requests) pour appliquer les "
                                                         f"modifications.", ephemeral=True)
 
@@ -128,26 +128,26 @@ def define_commands(client, port) -> None:
                     error_code = 2
                     logging.error(f"Could not insert association: {association} in DB (displayed error code "
                                   f"[{error_code}])")
-                    await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
+                    await interaction.followup.send("⚠️ Il y a eu un souci avec l'insertion dans la base "
                                                     f"de données, veuillez réessayer. [{error_code}]", ephemeral=True)
-                    await client.logs_channel.send("Il y a eu un souci avec l'insertion dans la base "
+                    await client.logs_channel.send("⚠️ Il y a eu un souci avec l'insertion dans la base "
                                                     f"de données, veuillez réessayer. [{error_code}]")
 
             else:
                 error_code = 1
                 logging.error(f"Could not insert request: {request} in DB (displayed error code [{error_code}])")
-                await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
+                await interaction.followup.send("⚠️ Il y a eu un souci avec l'insertion dans la base "
                                                 f"de données, veuillez réessayer. [{error_code}]", ephemeral=True)
-                await client.logs_channel.send("Il y a eu un souci avec l'insertion dans la base "
+                await client.logs_channel.send("⚠️ Il y a eu un souci avec l'insertion dans la base "
                                                 f"de données, veuillez réessayer. [{error_code}]")
 
         except Exception as e:
             error_code = 3
             logging.error(f"There was an exception while saving request {request} in DB: {e}")
             logging.error(f"Displayed error code [{error_code}]")
-            await interaction.followup.send("Il y a eu un souci avec l'insertion dans la base "
+            await interaction.followup.send("⚠️ Il y a eu un souci avec l'insertion dans la base "
                                             f"de données, veuillez réessayer. [{error_code}]", ephemeral=True)
-            await client.logs_channel.send("Il y a eu un souci avec l'insertion dans la base "
+            await client.logs_channel.send("⚠️ Il y a eu un souci avec l'insertion dans la base "
                                             f"de données, veuillez réessayer. [{error_code}]")
 
 
@@ -165,14 +165,14 @@ def define_commands(client, port) -> None:
 
         logging.info(f"Getting all running requests (user: {interaction.user}, user_id: {interaction.user.id})")
 
-        msg = ""
+        msg = "ℹ️ "
 
         for request, channel in zip(client.requests.values(), client.channels.values()):
             channel_name = channel.name
             msg += f"Nom de salon: {channel_name}, nom de recherche: {request['name']}\n"
 
         if not msg:
-            msg = "Aucune recherche active."
+            msg = "ℹ️ Aucune recherche active."
 
         logging.info(f"Msg: {msg}")
 
@@ -203,7 +203,7 @@ def define_commands(client, port) -> None:
 
         if not client.task:
             await client.setup_hook()
-            await interaction.followup.send("Toutes les recherches sont lancées.")
+            await interaction.followup.send("✅ Toutes les recherches sont lancées.")
 
             logging.info("All requests started successfully")
 
@@ -227,7 +227,7 @@ def define_commands(client, port) -> None:
         # Reset dicts and task
         client.reset_global_task()
 
-        await interaction.followup.send("Toutes les recherches sont arrêtées.")
+        await interaction.followup.send("✅ Toutes les recherches sont arrêtées.")
 
     @client.tree.command(name="sync", description="Admin seulement")
     async def sync(interaction: discord.Interaction) -> None:
@@ -241,8 +241,8 @@ def define_commands(client, port) -> None:
             await interaction.response.defer()
             await client.tree.sync()
             logging.info('Command tree synced')
-            await interaction.followup.send("Sync done.", ephemeral=True)
+            await interaction.followup.send("✅ Sync done.", ephemeral=True)
         else:
             logging.warning(f"Command tree sync attempted by user: {interaction.user} (user_id: {interaction.user.id})")
-            await interaction.response.send_message("Vous n'êtes pas Neeko (:",
+            await interaction.response.send_message("⚠️ Vous n'êtes pas Neeko (:",
                                                     ephemeral=True)
