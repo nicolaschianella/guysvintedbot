@@ -22,7 +22,7 @@ from discord import app_commands
 from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE, \
                             USER_INFOS_ROUTE, GET_IMAGES_URL_ROUTE, NO_IMAGE_AVAILABLE_URL, BRANDS, CLOTHES_STATES, \
                               FUZZ_RATIO
-from utils.display_requests import Buttons
+from utils.display_requests import BuyButtons
 from utils.utils import reformat_list_strings
 from concurrent.futures import ThreadPoolExecutor
 from thefuzz import fuzz
@@ -222,13 +222,13 @@ class GuysVintedBot(discord.Client):
                 embeds.append(embed)
 
             await channel.send(embeds=embeds,
-                               view=Buttons(url=clothe["url"],
-                                            ratio=ratio,
-                                            log_channel=self.logs_channel))
+                               view=BuyButtons(url=clothe["url"],
+                                               ratio=ratio,
+                                               log_channel=self.logs_channel))
             await self.all_clothes_channel.send(embeds=embeds,
-                                                view=Buttons(url=clothe["url"],
-                                                             ratio=ratio,
-                                                             log_channel=self.logs_channel))
+                                                view=BuyButtons(url=clothe["url"],
+                                                                ratio=ratio,
+                                                                log_channel=self.logs_channel))
 
             all_embeds.append(embeds)
 
