@@ -12,9 +12,10 @@ import discord
 import requests
 import json
 
-from utils.defines import API_HOST, ADD_CLOTHE_IN_STOCK_ROUTE, GET_CLOTHES_FROM_STOCK_ROUTE, SELL_CLOTHES_ROUTE
+from utils.defines import API_HOST, ADD_CLOTHE_IN_STOCK_ROUTE, GET_CLOTHES_FROM_STOCK_ROUTE, SELL_CLOTHES_ROUTE, \
+    DELETE_CLOTHES_ROUTE
 from utils.utils import notify_something_went_wrong
-from utils.stock_views import SellClotheView
+from utils.stock_views import SellClotheView, DeleteClotheView
 from typing import Union
 
 
@@ -238,7 +239,7 @@ class StockButtons(discord.ui.View):
 
                 else:
                     error_code = 6
-                    logging.error(f"There was an exception while registering clothe as sold {self.clothe_id}: {e}")
+                    logging.error(f"There was an issue while registering clothe as sold {self.clothe_id}")
                     logging.error(f"Displayed error code [{error_code}]")
                     await interaction.followup.send(
                         f"⚠️ Il y a eu un souci avec la vente du vêtement (id: {self.clothe_id}), veuillez "
@@ -267,10 +268,51 @@ class StockButtons(discord.ui.View):
             Returns: None
 
             """
+            delete_clothes_form = DeleteClotheView()
+            await interaction.response.send_modal(delete_clothes_form)
+            await delete_clothes_form.wait()
 
-            # TODO: confirmation button and delete from DB
-            await interaction.message.delete()
-            await interaction.response.send_message(f'Delete: {self.clothe_id}', ephemeral=True)
+            deletion_confirmation = delete_clothes_form.deletion_confirmation.value
+
+            # Check confirmation validity
+            if deletion_confirmation.lower() != "oui":
+                logging.warning(f"Confirmation undone - skipping clothe deletion: {self.clothe_id}")
+                await interaction.followup.send(f"ℹ️ Suppression non effectuée: {self.clothe_id}", ephemeral=True)
+                return
+
+            # Else we delete the item in stock
+            try:
+                delete_clothes = requests.post(f"{API_HOST}:{self.port}/{DELETE_CLOTHES_ROUTE}",
+                                               data=json.dumps({"clothe_id": str(self.clothe_id)}))
+
+                if delete_clothes.status_code == 200:
+                    logging.info(f"Successfully deleted clothe from stock: (id: {self.clothe_id})")
+                    await interaction.followup.send(f"✅ Suppression du vêtement effectuée: {self.clothe_id}",
+                                                    ephemeral=True)
+                    await self.logs_channel.send(f"✅ Suppression du vêtement effectuée: {self.clothe_id}")
+
+                    # Delete the stock entry
+                    await interaction.message.delete()
+
+                else:
+                    error_code = 7
+                    logging.error(f"There was an issue while deleting clothe from stock {self.clothe_id}")
+                    logging.error(f"Displayed error code [{error_code}]")
+                    await interaction.followup.send(
+                        f"⚠️ Il y a eu un souci avec la suppression du vêtement du stock (id: {self.clothe_id}), "
+                        f"veuillez réessayer. [{error_code}]", ephemeral=True)
+                    await self.logs_channel.send(f"⚠️ Il y a eu un souci avec la suppression du vêtement du stock "
+                                                 f"(id: {self.clothe_id}), veuillez réessayer. [{error_code}]")
+
+            except Exception as e:
+                error_code = 8
+                logging.error(f"There was an exception while deleting clothe from stock {self.clothe_id}: {e}")
+                logging.error(f"Displayed error code [{error_code}]")
+                await interaction.followup.send(
+                    f"⚠️ Il y a eu un souci avec la suppression du vêtement du stock (id: {self.clothe_id}), "
+                    f"veuillez réessayer. [{error_code}]", ephemeral=True)
+                await self.logs_channel.send(f"⚠️ Il y a eu un souci avec la suppression du vêtement du stock "
+                                             f"(id: {self.clothe_id}), veuillez réessayer. [{error_code}]")
 
         # "Vendu"
         sold_button = discord.ui.Button(label="✅ Vendu",
