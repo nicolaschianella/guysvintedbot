@@ -12,7 +12,9 @@ import discord
 import requests
 import json
 
-from utils.defines import API_HOST, ADD_CLOTHE_IN_STOCK_ROUTE, GET_CLOTHES_FROM_STOCK_ROUTE
+from utils.defines import API_HOST, ADD_CLOTHE_IN_STOCK_ROUTE, GET_CLOTHES_FROM_STOCK_ROUTE, SELL_CLOTHES_ROUTE
+from utils.utils import notify_something_went_wrong
+from utils.stock_views import SellClotheView
 from typing import Union
 
 
@@ -62,75 +64,88 @@ class BuyButtons(discord.ui.View):
         Returns: None
 
         """
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
 
-        # Check if clothe in stock already
-        clothes_in_stock = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_FROM_STOCK_ROUTE}",
-                                        data=json.dumps({"which": "in_stock"}))
+            # Check if clothe in stock already
+            clothes_in_stock = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_FROM_STOCK_ROUTE}",
+                                            data=json.dumps({"which": "in_stock"}))
 
-        if clothes_in_stock.status_code == 200:
-            stock_clothes = json.loads(clothes_in_stock.json()["data"])["found_clothes"]
-            clothes_ids = [clothe["clothe_id"] for clothe in stock_clothes]
+            if clothes_in_stock.status_code == 200:
+                stock_clothes = json.loads(clothes_in_stock.json()["data"])["found_clothes"]
+                clothes_ids = [clothe["clothe_id"] for clothe in stock_clothes]
 
-            # Case clothe already in stock
-            if str(self.clothe["id"]) in clothes_ids:
-                logging.warning(f"Clothe already in stock (id: {self.clothe['id']})")
+                # Case clothe already in stock
+                if str(self.clothe["id"]) in clothes_ids:
+                    logging.warning(f"Clothe already in stock (id: {self.clothe['id']})")
 
-                await interaction.followup.send(f"ℹ️ Vêtement déjà en stock: (nom: {self.clothe['title']}, "
-                                                f"url: {self.clothe['url']})", ephemeral=True)
+                    await interaction.followup.send(f"ℹ️ Vêtement déjà en stock: (nom: {self.clothe['title']}, "
+                                                    f"url: {self.clothe['url']})", ephemeral=True)
 
+                    return
+
+            else:
+                # Case API error
+                logging.error(f"Error getting clothes from stock, full response: {clothes_in_stock.text}")
+
+                await interaction.followup.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
+                                                f"nom: {self.clothe['title']}) car erreur du programme.", ephemeral=True)
+                await self.logs_channel.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
+                                                f"nom: {self.clothe['title']}) car erreur du programme.")
                 return
 
-        else:
-            # Case API error
-            logging.error(f"Error getting clothes from stock, full response: {clothes_in_stock.text}")
+            logging.info(f"Processing autobuy for clothe: {self.clothe}")
 
-            await interaction.followup.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
-                                            f"nom: {self.clothe['title']}) car erreur du programme.", ephemeral=True)
-            await self.logs_channel.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
-                                            f"nom: {self.clothe['title']}) car erreur du programme.")
-            return
+            # TODO: here add autobuy
+            bought = True  # change with API response for autobuy
 
-        logging.info(f"Processing autobuy for clothe: {self.clothe}")
+            # Case purchase OK
+            if bought:
+                # Add missing keys
+                self.clothe["request_id"] = self.request_id
+                self.clothe["clothe_id"] = self.clothe["id"]
+                self.clothe["ratio"] = self.ratio
 
-        # TODO: here add autobuy
-        bought = True  # change with API response for autobuy
+                # Register clothe in stock through the API
+                add_in_stock = requests.post(f"{API_HOST}:{self.port}/{ADD_CLOTHE_IN_STOCK_ROUTE}",
+                                             data=json.dumps(self.clothe))
 
-        # Case purchase OK
-        if bought:
-            # Add missing keys
-            self.clothe["request_id"] = self.request_id
-            self.clothe["clothe_id"] = self.clothe["id"]
-            self.clothe["ratio"] = self.ratio
+                # Status OK - post in channels
+                if add_in_stock.status_code == 200:
+                    logging.info(f"Successfully added clothe to stock (id: {self.clothe['id']})")
 
-            # Register clothe in stock through the API
-            add_in_stock = requests.post(f"{API_HOST}:{self.port}/{ADD_CLOTHE_IN_STOCK_ROUTE}",
-                                         data=json.dumps(self.clothe))
+                    await interaction.followup.send(f"✅ Achat bien effectué: {self.clothe['title']}", ephemeral=True)
+                    await self.logs_channel.send(f"✅ Vêtement mis en stock: (id: {self.clothe['id']}, "
+                                                 f"nom: {self.clothe['title']}, url: {self.clothe['url']})")
+                    await self.stock_channel.send(embeds=self.embeds,
+                                                  view=StockButtons(clothe_id=self.clothe["id"],
+                                                                    port=self.port,
+                                                                    logs_channel=self.logs_channel))
 
-            # Status OK - post in channels
-            if add_in_stock.status_code == 200:
-                logging.info(f"Successfully added clothe to stock (id: {self.clothe['id']})")
+                # Status not OK - issue with the API, post in logs channel
+                else:
+                    logging.error(f"Could not add clothe to DB: {self.clothe}. Full response: {add_in_stock.text}")
 
-                await interaction.followup.send(f"✅ Achat bien effectué: {self.clothe['title']}", ephemeral=True)
-                await self.logs_channel.send(f"✅ Vêtement mis en stock: (id: {self.clothe['id']}, "
-                                             f"nom: {self.clothe['title']}, url: {self.clothe['url']})")
-                await self.stock_channel.send(embeds=self.embeds,
-                                              view=StockButtons(clothe_id=self.clothe["id"],
-                                                                port=self.port))
+                    await interaction.followup.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
+                                                 f"nom: {self.clothe['title']}) mais non mis en stock.", ephemeral=True)
+                    await self.logs_channel.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
+                                                 f"nom: {self.clothe['title']}) mais non mis en stock.")
 
-            # Status not OK - issue with the API, post in logs channel
+            # Case purchase gone wrong
             else:
-                logging.error(f"Could not add clothe to DB: {self.clothe}. Full response: {add_in_stock.text}")
+                # TODO: if doesn't work, logs + write in log_channel? and ephemeral for user
+                pass
 
-                await interaction.followup.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
-                                             f"nom: {self.clothe['title']}) mais non mis en stock.", ephemeral=True)
-                await self.logs_channel.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
-                                             f"nom: {self.clothe['title']}) mais non mis en stock.")
-
-        # Case purchase gone wrong
-        else:
-            # TODO: if doesn't work, logs + write in log_channel and ephemeral for user
-            pass
+        except Exception as e:
+            error_code = 4
+            logging.error(f"There was an exception while buying clothe {self.clothe}: {e}")
+            logging.error(f"Displayed error code [{error_code}]")
+            await interaction.followup.send(f"⚠️ Il y a eu un souci avec l'achat du vêtement (id: {self.clothe['id']}, "
+                                                 f"nom: {self.clothe['title']}, url: {self.clothe['url']}), veuillez "
+                                            f"réessayer. [{error_code}]", ephemeral=True)
+            await self.logs_channel.send(f"⚠️ Il y a eu un souci avec l'achat du vêtement (id: {self.clothe['id']}, "
+                                                 f"nom: {self.clothe['title']}, url: {self.clothe['url']}), veuillez "
+                                            f"réessayer. [{error_code}]")
 
     @discord.ui.button(label="Non pertinent", style=discord.ButtonStyle.red)
     async def not_pertinent(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
@@ -144,24 +159,34 @@ class BuyButtons(discord.ui.View):
         Returns: None
 
         """
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
 
-        logging.warning(f"Bad fuzz ratio: {self.ratio}")
+            logging.warning(f"Bad fuzz ratio: {self.ratio}")
 
-        await interaction.followup.send("Merci du feedback !", ephemeral=True)
-        await self.logs_channel.send(f"ℹ️ Fuzz ratio non pertinent: {self.ratio}")
+            await interaction.followup.send("Merci du feedback !", ephemeral=True)
+            await self.logs_channel.send(f"ℹ️ Fuzz ratio non pertinent: {self.ratio}")
+
+        except Exception as e:
+            await notify_something_went_wrong("BuyButtons",
+                                              "not_pertinent",
+                                              5,
+                                              e,
+                                              interaction)
 
 
 class StockButtons(discord.ui.View):
-    def __init__(self, clothe_id: Union[str, int], port: int):
+    def __init__(self, clothe_id: Union[str, int], port: int, logs_channel: discord.TextChannel):
         """
         Represents buttons in stock - to cancel purchase or to change clothe state to "sold"
         Args:
             clothe_id: Union[str, int], Vinted clothe id
             port: int, API port to use
+            logs_channel: discord.TextChannel, lohs channel to post in
         """
         self.clothe_id = clothe_id
         self.port = port
+        self.logs_channel = logs_channel
         super().__init__(timeout=None)
         self.display_stock_buttons()
 
@@ -181,8 +206,57 @@ class StockButtons(discord.ui.View):
             Returns: None
 
             """
-            # TODO: pop-up and register sale in DB
-            await interaction.response.send_message(f'Sell: {self.clothe_id}', ephemeral=True)
+            sell_clothes_form = SellClotheView()
+            await interaction.response.send_modal(sell_clothes_form)
+            await sell_clothes_form.wait()
+
+            sale_date, selling_price = sell_clothes_form.sale_date.value, sell_clothes_form.selling_price.value
+
+            # Register sale
+            try:
+                sell_clothes = requests.post(f"{API_HOST}:{self.port}/{SELL_CLOTHES_ROUTE}",
+                                             data=json.dumps({"clothe_id": str(self.clothe_id),
+                                                              "sale_date": sale_date,
+                                                              "selling_price": selling_price}))
+
+                if sell_clothes.status_code == 200:
+                    logging.info(f"Successfully registered clothe as sold: (id: {self.clothe_id}, "
+                                                 f"selling_price: {selling_price}€, "
+                                                 f"sale_date: {sale_date})")
+                    await interaction.followup.send(f"✅ Vente bien enregistrée: {self.clothe_id}", ephemeral=True)
+                    await self.logs_channel.send(f"✅ Vêtement vendu: (id: {self.clothe_id}, "
+                                                 f"prix de vente: {selling_price}€, "
+                                                 f"date de vente: {sale_date})")
+
+                    # Delete the stock entry
+                    await interaction.message.delete()
+
+                elif sell_clothes.status_code == 501:
+                    logging.warning(f"Bad date format: {sale_date}, full API response: {sell_clothes.text}")
+                    await interaction.followup.send(f"ℹ️ Vente non enregistrée: {self.clothe_id}, car la date "
+                                                    f"n'est pas au bon format.", ephemeral=True)
+
+                else:
+                    error_code = 6
+                    logging.error(f"There was an exception while registering clothe as sold {self.clothe_id}: {e}")
+                    logging.error(f"Displayed error code [{error_code}]")
+                    await interaction.followup.send(
+                        f"⚠️ Il y a eu un souci avec la vente du vêtement (id: {self.clothe_id}), veuillez "
+                        f"réessayer. [{error_code}]", ephemeral=True)
+                    await self.logs_channel.send(
+                        f"⚠️ Il y a eu un souci avec la vente du vêtement (id: {self.clothe_id}), veuillez "
+                        f"réessayer. [{error_code}]")
+
+            except Exception as e:
+                error_code = 5
+                logging.error(f"There was an exception while registering clothe as sold {self.clothe_id}: {e}")
+                logging.error(f"Displayed error code [{error_code}]")
+                await interaction.followup.send(
+                    f"⚠️ Il y a eu un souci avec la vente du vêtement (id: {self.clothe_id}), veuillez "
+                    f"réessayer. [{error_code}]", ephemeral=True)
+                await self.logs_channel.send(
+                    f"⚠️ Il y a eu un souci avec la vente du vêtement (id: {self.clothe_id}), veuillez "
+                    f"réessayer. [{error_code}]")
 
         async def delete(interaction: discord.Interaction):
             """
@@ -193,7 +267,9 @@ class StockButtons(discord.ui.View):
             Returns: None
 
             """
+
             # TODO: confirmation button and delete from DB
+            await interaction.message.delete()
             await interaction.response.send_message(f'Delete: {self.clothe_id}', ephemeral=True)
 
         # "Vendu"
