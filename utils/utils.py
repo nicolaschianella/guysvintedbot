@@ -9,6 +9,8 @@
 ###############################################################################
 import logging
 
+import discord
+
 
 def reformat_list_strings(list_strings: list, format_type: str="clothes_states") -> str:
     """
@@ -31,3 +33,31 @@ def reformat_list_strings(list_strings: list, format_type: str="clothes_states")
     logging.info(f"Successfully formatted {format_type} to {concat_values}")
 
     return concat_values
+
+
+async def notify_something_went_wrong(class_name: str,
+                                      method_name: str,
+                                      error_code: int,
+                                      e: Exception,
+                                      interaction: discord.Interaction) -> None:
+    """
+    Small util function to notify the user something went wrong
+    Args:
+        class_name: str, name of class where the issue occurred
+        method_name: str, name of method where the issue occurred
+        error_code: int, custom error code to format in error message/log
+        e: Exception, ecption that occurred
+        interaction: discord.Interaction, interaction to respond
+
+    Returns: None
+
+    """
+    logging.error(f"There was an exception with {class_name} ({method_name}): {e}")
+
+    # Need try/except cause we don't know if it's a interaction.response.send_message or followup.send
+    try:
+        await interaction.response.send_message(f"⚠️ Oops! Quelque chose s'est mal passé. [{error_code}]",
+                                                ephemeral=True)
+
+    except Exception:
+        await interaction.followup.send(f"⚠️ Oops! Quelque chose s'est mal passé. [{error_code}]", ephemeral=True)
