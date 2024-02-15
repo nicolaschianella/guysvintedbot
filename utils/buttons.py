@@ -13,6 +13,7 @@ import requests
 import json
 
 from utils.defines import API_HOST, ADD_CLOTHE_IN_STOCK_ROUTE, GET_CLOTHES_FROM_STOCK_ROUTE
+from typing import Union
 
 
 class BuyButtons(discord.ui.View):
@@ -152,7 +153,7 @@ class BuyButtons(discord.ui.View):
 
 
 class StockButtons(discord.ui.View):
-    def __init__(self, clothe_id, port: int):
+    def __init__(self, clothe_id: Union[str, int], port: int):
         """
         Represents buttons in stock - to cancel purchase or to change clothe state to "sold"
         Args:
