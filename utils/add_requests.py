@@ -69,6 +69,7 @@ class AddRequestsForm(discord.ui.Modal,
 
         except Exception as e:
             logging.error(f"There was an exception with AddRequestsForm modal (on_submit): {e}")
+            await interaction.response.send_message("⚠️ Oops! Quelque chose s'est mal passé. [1]", ephemeral=True)
 
     # Called if error of any kind
     async def on_error(self,
@@ -82,7 +83,7 @@ class AddRequestsForm(discord.ui.Modal,
         """
         logging.error(f"There was an exception with AddRequestsForm modal (on_error): {e}")
         # Notify the sender
-        await interaction.response.send_message("Oops! Quelque chose s'est mal passé.", ephemeral=True)
+        await interaction.response.send_message("⚠️ Oops! Quelque chose s'est mal passé. [2]", ephemeral=True)
 
 
 class BrandStateSelectView(discord.ui.View):
@@ -119,6 +120,7 @@ class BrandStateSelectView(discord.ui.View):
 
         except Exception as e:
             logging.error(f"There was an exception with BrandStateSelectView view (select_brand): {e}")
+            await interaction.response.send_message("⚠️ Oops! Quelque chose s'est mal passé. [3]", ephemeral=True)
 
     async def select_clothes_states(self,
                                  interaction: discord.Interaction,
@@ -146,6 +148,7 @@ class BrandStateSelectView(discord.ui.View):
 
         except Exception as e:
             logging.error(f"There was an exception with BrandStateSelectView view (select_clothes_states): {e}")
+            await interaction.response.send_message("⚠️ Oops! Quelque chose s'est mal passé. [4]", ephemeral=True)
 
 
 class ClothesStatesSelect(discord.ui.Select):
