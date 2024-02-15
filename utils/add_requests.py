@@ -8,8 +8,9 @@
 #
 ###############################################################################
 import discord
-import logging
+
 from utils.defines import BRANDS, CLOTHES_STATES
+from utils.utils import notify_something_went_wrong
 
 
 class AddRequestsForm(discord.ui.Modal,
@@ -68,8 +69,11 @@ class AddRequestsForm(discord.ui.Modal,
             self.brand, self.clothes_states = select_view.brand, select_view.clothes_states
 
         except Exception as e:
-            logging.error(f"There was an exception with AddRequestsForm modal (on_submit): {e}")
-            await interaction.response.send_message("⚠️ Oops! Quelque chose s'est mal passé. [1]", ephemeral=True)
+            await notify_something_went_wrong("AddRequestsForm",
+                                              "on_submit",
+                                              1,
+                                              e,
+                                              interaction)
 
     # Called if error of any kind
     async def on_error(self,
@@ -81,9 +85,11 @@ class AddRequestsForm(discord.ui.Modal,
         :param e: Exception
         :return: None
         """
-        logging.error(f"There was an exception with AddRequestsForm modal (on_error): {e}")
-        # Notify the sender
-        await interaction.response.send_message("⚠️ Oops! Quelque chose s'est mal passé. [2]", ephemeral=True)
+        await notify_something_went_wrong("AddRequestsForm",
+                                          "on_error",
+                                          2,
+                                          e,
+                                          interaction)
 
 
 class BrandStateSelectView(discord.ui.View):
@@ -119,8 +125,11 @@ class BrandStateSelectView(discord.ui.View):
             await interaction.response.defer()
 
         except Exception as e:
-            logging.error(f"There was an exception with BrandStateSelectView view (select_brand): {e}")
-            await interaction.response.send_message("⚠️ Oops! Quelque chose s'est mal passé. [3]", ephemeral=True)
+            await notify_something_went_wrong("BrandStateSelectView",
+                                              "select_brand",
+                                              1,
+                                              e,
+                                              interaction)
 
     async def select_clothes_states(self,
                                  interaction: discord.Interaction,
@@ -147,8 +156,11 @@ class BrandStateSelectView(discord.ui.View):
                                            delete_after=5)
 
         except Exception as e:
-            logging.error(f"There was an exception with BrandStateSelectView view (select_clothes_states): {e}")
-            await interaction.response.send_message("⚠️ Oops! Quelque chose s'est mal passé. [4]", ephemeral=True)
+            await notify_something_went_wrong("BrandStateSelectView",
+                                              "select_clothes_states",
+                                              4,
+                                              e,
+                                              interaction)
 
 
 class ClothesStatesSelect(discord.ui.Select):
