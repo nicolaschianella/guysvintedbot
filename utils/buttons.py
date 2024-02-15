@@ -42,7 +42,7 @@ class BuyButtons(discord.ui.View):
             stock_channel: discord.TextChannel, channel to post in when autobuy button is pressed
             port: int, API port to use
         """
-        super().__init__()
+        super().__init__(timeout=None)
         self.request_id = request_id
         self.clothe = clothe
         self.embeds = embeds
