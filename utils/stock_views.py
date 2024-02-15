@@ -40,8 +40,7 @@ class SellClotheView(discord.ui.Modal,
 
         """
         try:
-            # TODO: register sale
-            await interaction.response.send_message(f'Prix de vente: {self.selling_price}', ephemeral=True)
+            await interaction.response.defer()
 
         except Exception as e:
             await notify_something_went_wrong("SellClotheView",
