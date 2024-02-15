@@ -53,11 +53,6 @@ class GuysVintedBot(discord.Client):
         Called when the bot starts. Launches all clothes requests and associated channels to post.
         :return: None
         """
-        # Enable stock buttons on startup
-        for clothe_id in self.clothes_ids:
-            self.add_view(StockButtons(clothe_id=clothe_id,
-                                       port=self.port))
-
         # Acquire requests and channel_ids
         clothe_requests, channel_ids = self.load_all_active_requests_and_channels()
 
@@ -79,6 +74,12 @@ class GuysVintedBot(discord.Client):
         self.all_clothes_channel = self.get_channel(int(os.getenv("ALL_CLOTHES_CHANNEL_ID")))
         self.logs_channel = self.get_channel(int(os.getenv("LOGS_CHANNEL_ID")))
         self.stock_channel = self.get_channel(int(os.getenv("STOCK_CHANNEL_ID")))
+
+        # Enable stock buttons on startup
+        for clothe_id in self.clothes_ids:
+            self.add_view(StockButtons(clothe_id=clothe_id,
+                                       port=self.port,
+                                       logs_channel=self.logs_channel))
 
         logging.info(f"Ready & logged in as {self.user}")
 
