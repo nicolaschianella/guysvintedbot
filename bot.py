@@ -22,7 +22,7 @@ from discord import app_commands
 from utils.defines import API_HOST, GET_CLOTHES_ROUTE, REQUESTS_CHANNEL_IDS_ROUTE, WAIT_TIME, PER_PAGE, \
                             USER_INFOS_ROUTE, GET_IMAGES_URL_ROUTE, NO_IMAGE_AVAILABLE_URL, BRANDS, CLOTHES_STATES, \
                               FUZZ_RATIO, GET_CLOTHES_FROM_STOCK_ROUTE
-from utils.display_requests import BuyButtons, StockButtons
+from utils.buttons import BuyButtons, StockButtons
 from utils.utils import reformat_list_strings
 from concurrent.futures import ThreadPoolExecutor
 from thefuzz import fuzz

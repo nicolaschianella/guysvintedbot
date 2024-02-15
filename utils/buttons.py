@@ -1,8 +1,8 @@
 ###############################################################################
 #
-# File:      display_requests.py
+# File:      buttons.py
 # Author(s): Nico
-# Scope:     The buttons to show details or buy clothes
+# Scope:     The buttons to show details, buy clothes and manage stock
 #
 # Created:   07 February 2024
 #
