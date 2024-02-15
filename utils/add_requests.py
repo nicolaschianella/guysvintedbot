@@ -127,7 +127,7 @@ class BrandStateSelectView(discord.ui.View):
         except Exception as e:
             await notify_something_went_wrong("BrandStateSelectView",
                                               "select_brand",
-                                              1,
+                                              3,
                                               e,
                                               interaction)
 
