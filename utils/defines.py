@@ -33,6 +33,8 @@ SELL_CLOTHES_ROUTE ="api/operations/sell_clothes"
 DELETE_CLOTHES_ROUTE = "api/operations/delete_clothes"
 # Route to log in
 LOGIN_ROUTE = "api/operations/login"
+# Route to get closest pickup points
+PICKUP_GET_ROUTE = "api/operations/get_close_pickup_points"
 # In which category we create new text channel upon saving a clothe request
 CATEGORY = "buybuybuybuy"
 # Time in seconds to wait for a new API call to get_clothes
