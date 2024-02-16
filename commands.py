@@ -15,8 +15,9 @@ import json
 import logging
 
 from utils.add_requests import AddRequestsForm
+from utils.login import Login
 from utils.utils import reformat_list_strings
-from utils.defines import API_HOST, UPDATE_REQUESTS_ROUTE, ADD_ASSOCIATION_ROUTE, PER_PAGE, CATEGORY
+from utils.defines import API_HOST, UPDATE_REQUESTS_ROUTE, ADD_ASSOCIATION_ROUTE, LOGIN_ROUTE, PER_PAGE, CATEGORY
 
 
 def define_commands(client, port) -> None:
@@ -228,6 +229,61 @@ def define_commands(client, port) -> None:
         client.reset_global_task()
 
         await interaction.followup.send("✅ Toutes les recherches sont arrêtées.")
+
+    @client.tree.command(name="login", description="Se connecter à Vinted")
+    async def login(interaction: discord.Interaction) -> None:
+        """
+        Login using Bearer token
+        Args:
+            interaction: discord.Interaction
+
+        Returns: None
+
+        """
+        logging.info(f"Login - user: {interaction.user} (user_id: {interaction.user.id})")
+
+        login_form = Login()
+        await interaction.response.send_modal(login_form)
+        await login_form.wait()
+
+        # Get bearer
+        bearer = login_form.bearer.value
+
+        # Build dict to be sent to the API
+        request = {
+            "bearer": bearer
+        }
+
+        logging.info("Attempting to log in")
+
+        try:
+            # Attempt the request save
+            save_request = requests.post(f"{API_HOST}:{port}/{LOGIN_ROUTE}",
+                                         data=json.dumps(request))
+
+            if save_request.status_code == 200:
+                await interaction.followup.send("✅ Login réussi !", ephemeral=True)
+                await client.logs_channel.send("✅ Login réussi !")
+                logging.info("Successfully logged in using bearer")
+
+            else:
+                code = save_request.status_code
+
+                error_code = 10 if code == 500 else 11 if code == 501 else 12 if code == 502 else 13
+                logging.error(f"Could not log in (displayed error code [{error_code}])")
+                await interaction.followup.send("⚠️ Il y a eu un souci avec le login, veuillez réessayer. "
+                                                f"[{error_code}]", ephemeral=True)
+                await client.logs_channel.send("⚠️ Il y a eu un souci avec le login, veuillez réessayer. "
+                                                f"[{error_code}]")
+
+        except Exception as e:
+            error_code = 9
+            logging.error(f"There was an exception while logging in: {e}")
+            logging.error(f"Displayed error code [{error_code}]")
+            await interaction.followup.send("⚠️ Il y a eu un souci avec la connexion à Vinted, "
+                                            f"veuillez réessayer. [{error_code}]", ephemeral=True)
+            await client.logs_channel.send("⚠️ Il y a eu un souci avec la connexion à Vinted, "
+                                            f"veuillez réessayer. [{error_code}]")
 
     @client.tree.command(name="sync", description="Admin seulement")
     async def sync(interaction: discord.Interaction) -> None:
