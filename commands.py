@@ -16,8 +16,10 @@ import logging
 
 from utils.add_requests import AddRequestsForm
 from utils.login import Login
+from utils.pickup import PickUp
 from utils.utils import reformat_list_strings
-from utils.defines import API_HOST, UPDATE_REQUESTS_ROUTE, ADD_ASSOCIATION_ROUTE, LOGIN_ROUTE, PER_PAGE, CATEGORY
+from utils.defines import API_HOST, UPDATE_REQUESTS_ROUTE, ADD_ASSOCIATION_ROUTE, LOGIN_ROUTE, PER_PAGE, CATEGORY, \
+                            PICKUP_GET_ROUTE
 
 
 def define_commands(client, port) -> None:
@@ -284,6 +286,74 @@ def define_commands(client, port) -> None:
                                             f"veuillez réessayer. [{error_code}]", ephemeral=True)
             await client.logs_channel.send("⚠️ Il y a eu un souci avec la connexion à Vinted, "
                                             f"veuillez réessayer. [{error_code}]")
+
+    @client.tree.command(name="pickup", description="Choix des points relais")
+    async def pickup(interaction: discord.Interaction) -> None:
+        """
+        Choose pickup points
+        Args:
+            interaction: discord.Interaction
+
+        Returns: None
+
+        """
+        logging.info(f"Pickup - user: {interaction.user} (user_id: {interaction.user.id})")
+
+        pickup_form = PickUp()
+        await interaction.response.send_modal(pickup_form)
+        await pickup_form.wait()
+
+        # Get variables
+        number = pickup_form.number.value
+        street = pickup_form.street.value
+        zipcode = pickup_form.zipcode.value
+        city = pickup_form.city.value
+        country = pickup_form.country.value
+
+        # Format API input
+        request = {
+            "number": number,
+            "street": street,
+            "zipcode": zipcode,
+            "city": city,
+            "country": country
+        }
+
+        logging.info("Getting closest pickup points")
+
+        try:
+            get_pickup = requests.get(f"{API_HOST}:{port}/{PICKUP_GET_ROUTE}",
+                                      data=json.dumps(request))
+
+            if get_pickup.status_code == 200:
+
+                # TODO: add selectors and save result
+
+
+                await interaction.followup.send("✅ Enregistrement des points relais réussi !", ephemeral=True)
+                await client.logs_channel.send("✅ Enregistrement des points relais réussi !")
+                logging.info("Successfully retrieved pickup points")
+
+            else:
+                code = get_pickup.status_code
+
+                error_code = 15 if code == 501 else 16
+                logging.error(f"Could not get pickup points (displayed error code [{error_code}])")
+                await interaction.followup.send("⚠️ Il y a eu un souci avec les points relais, veuillez réessayer. "
+                                                f"[{error_code}]", ephemeral=True)
+                await client.logs_channel.send("⚠️ Il y a eu un souci avec les points relais, veuillez réessayer. "
+                                               f"[{error_code}]")
+
+        except Exception as e:
+            error_code = 14
+            logging.error(f"There was an exception while getting pickup points: {e}")
+            logging.error(f"Displayed error code [{error_code}]")
+            await interaction.followup.send("⚠️ Il y a eu un souci avec les points relais, "
+                                            f"veuillez réessayer. [{error_code}]", ephemeral=True)
+            await client.logs_channel.send("⚠️ Il y a eu un souci avec les points relais, "
+                                           f"veuillez réessayer. [{error_code}]")
+
+
 
     @client.tree.command(name="sync", description="Admin seulement")
     async def sync(interaction: discord.Interaction) -> None:
