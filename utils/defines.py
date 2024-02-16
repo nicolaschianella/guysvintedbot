@@ -31,6 +31,8 @@ GET_CLOTHES_FROM_STOCK_ROUTE = "api/operations/get_clothes_from_stock"
 SELL_CLOTHES_ROUTE ="api/operations/sell_clothes"
 # Route to delete clothes from stock
 DELETE_CLOTHES_ROUTE = "api/operations/delete_clothes"
+# Route to log in
+LOGIN_ROUTE = "api/operations/login"
 # In which category we create new text channel upon saving a clothe request
 CATEGORY = "buybuybuybuy"
 # Time in seconds to wait for a new API call to get_clothes
