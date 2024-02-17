@@ -16,10 +16,10 @@ import logging
 
 from utils.add_requests import AddRequestsForm
 from utils.login import Login
-from utils.pickup import PickUp
+from utils.pickup import PickUpModal, PickUpSelectView
 from utils.utils import reformat_list_strings
 from utils.defines import API_HOST, UPDATE_REQUESTS_ROUTE, ADD_ASSOCIATION_ROUTE, LOGIN_ROUTE, PER_PAGE, CATEGORY, \
-                            PICKUP_GET_ROUTE
+                            PICKUP_GET_ROUTE, PICKUP_POST_ROUTE
 
 
 def define_commands(client, port) -> None:
@@ -299,7 +299,7 @@ def define_commands(client, port) -> None:
         """
         logging.info(f"Pickup - user: {interaction.user} (user_id: {interaction.user.id})")
 
-        pickup_form = PickUp()
+        pickup_form = PickUpModal()
         await interaction.response.send_modal(pickup_form)
         await pickup_form.wait()
 
@@ -327,12 +327,45 @@ def define_commands(client, port) -> None:
 
             if get_pickup.status_code == 200:
 
-                # TODO: add selectors and save result
+                user_misc = json.loads(get_pickup.json()["data"])["user_misc"]
+                col = json.loads(get_pickup.json()["data"])["col"]
+                mon = json.loads(get_pickup.json()["data"])["mon"]
 
+                logging.info(f"Received col pickups: {col}")
+                logging.info(f"Received mon pickups: {mon}")
 
-                await interaction.followup.send("✅ Enregistrement des points relais réussi !", ephemeral=True)
-                await client.logs_channel.send("✅ Enregistrement des points relais réussi !")
-                logging.info("Successfully retrieved pickup points")
+                pickup_view = PickUpSelectView(col, mon)
+                await interaction.followup.send(view=pickup_view)
+                await pickup_view.wait()
+
+                # Get results
+                col_chosen = col[int(pickup_view.col_chosen)]
+                mon_chosen = mon[int(pickup_view.mon_chosen)]
+
+                logging.info(f"Pickup chosen (col): {col_chosen}")
+                logging.info(f"Pickup chosen (mon): {mon_chosen}")
+
+                # Save pickup points
+                request = {"col": col_chosen,
+                           "mon": mon_chosen,
+                           "user_position": user_misc}
+
+                save_pickup = requests.post(f"{API_HOST}:{port}/{PICKUP_POST_ROUTE}",
+                                           data=json.dumps(request))
+
+                if save_pickup.status_code == 200:
+                    await interaction.followup.send("✅ Enregistrement des points relais réussi !", ephemeral=True)
+                    await client.logs_channel.send("✅ Enregistrement des points relais réussi !")
+                    logging.info("Successfully saved pickup points")
+
+                else:
+                    error_code = 17
+                    logging.error(f"There was an exception while saving pickup points: {e}")
+                    logging.error(f"Displayed error code [{error_code}]")
+                    await interaction.followup.send("⚠️ Il y a eu un souci avec les points relais, "
+                                                    f"veuillez réessayer. [{error_code}]", ephemeral=True)
+                    await client.logs_channel.send("⚠️ Il y a eu un souci avec les points relais, "
+                                                   f"veuillez réessayer. [{error_code}]")
 
             else:
                 code = get_pickup.status_code
