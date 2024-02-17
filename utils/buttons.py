@@ -13,7 +13,7 @@ import requests
 import json
 
 from utils.defines import API_HOST, ADD_CLOTHE_IN_STOCK_ROUTE, GET_CLOTHES_FROM_STOCK_ROUTE, SELL_CLOTHES_ROUTE, \
-    DELETE_CLOTHES_ROUTE
+    DELETE_CLOTHES_ROUTE, AUTOBUY_ROUTE
 from utils.utils import notify_something_went_wrong
 from utils.stock_views import SellClotheView, DeleteClotheView
 from typing import Union
@@ -97,45 +97,64 @@ class BuyButtons(discord.ui.View):
 
             logging.info(f"Processing autobuy for clothe: {self.clothe}")
 
-            # TODO: here add autobuy
-            bought = True  # change with API response for autobuy
+            request = {"item_id": self.clothe["id"],
+                       "seller_id": self.clothe["seller_id"],
+                       "item_url": self.clothe["url"]}
+
+            autobuy = requests.post(f"{API_HOST}:{self.port}/{AUTOBUY_ROUTE}", data=json.dumps(request))
+
+            if autobuy.status_code != 200:
+                # Case item already bought
+                if autobuy.status_code == 501:
+                    logging.warning(f"Clothe already sold:")
+                    await interaction.followup.send(f"ℹ️ Vêtement déjà vendu: (id: {self.clothe['id']}, "
+                                                 f"nom: {self.clothe['title']}, url: {self.clothe['url']})",
+                                                    ephemeral=True)
+                    return
+
+                # Case error
+                else:
+                    logging.error(f"Could not autobuy clothe: {self.clothe}. Full response: {autobuy.text}")
+
+                    await interaction.followup.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
+                                                    f"nom: {self.clothe['title']}) car erreur du programme.",
+                                                    ephemeral=True)
+                    await self.logs_channel.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
+                                                 f"nom: {self.clothe['title']}) car erreur du programme.")
+                    return
+
+            logging.info(f"Autobuy OK, inserting clothe in DB (id: {self.clothe['id']})")
 
             # Case purchase OK
-            if bought:
-                # Add missing keys
-                self.clothe["request_id"] = self.request_id
-                self.clothe["clothe_id"] = self.clothe["id"]
-                self.clothe["ratio"] = self.ratio
+            # Add missing keys
+            self.clothe["request_id"] = self.request_id
+            self.clothe["clothe_id"] = self.clothe["id"]
+            self.clothe["ratio"] = self.ratio
 
-                # Register clothe in stock through the API
-                add_in_stock = requests.post(f"{API_HOST}:{self.port}/{ADD_CLOTHE_IN_STOCK_ROUTE}",
-                                             data=json.dumps(self.clothe))
+            # Register clothe in stock through the API
+            add_in_stock = requests.post(f"{API_HOST}:{self.port}/{ADD_CLOTHE_IN_STOCK_ROUTE}",
+                                         data=json.dumps(self.clothe))
 
-                # Status OK - post in channels
-                if add_in_stock.status_code == 200:
-                    logging.info(f"Successfully added clothe to stock (id: {self.clothe['id']})")
+            # Status OK - post in channels
+            if add_in_stock.status_code == 200:
+                logging.info(f"Successfully added clothe to stock (id: {self.clothe['id']})")
 
-                    await interaction.followup.send(f"✅ Achat bien effectué: {self.clothe['title']}", ephemeral=True)
-                    await self.logs_channel.send(f"✅ Vêtement mis en stock: (id: {self.clothe['id']}, "
-                                                 f"nom: {self.clothe['title']}, url: {self.clothe['url']})")
-                    await self.stock_channel.send(embeds=self.embeds,
-                                                  view=StockButtons(clothe_id=self.clothe["id"],
-                                                                    port=self.port,
-                                                                    logs_channel=self.logs_channel))
+                await interaction.followup.send(f"✅ Achat bien effectué: {self.clothe['title']}", ephemeral=True)
+                await self.logs_channel.send(f"✅ Vêtement mis en stock: (id: {self.clothe['id']}, "
+                                             f"nom: {self.clothe['title']}, url: {self.clothe['url']})")
+                await self.stock_channel.send(embeds=self.embeds,
+                                              view=StockButtons(clothe_id=self.clothe["id"],
+                                                                port=self.port,
+                                                                logs_channel=self.logs_channel))
 
-                # Status not OK - issue with the API, post in logs channel
-                else:
-                    logging.error(f"Could not add clothe to DB: {self.clothe}. Full response: {add_in_stock.text}")
-
-                    await interaction.followup.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
-                                                 f"nom: {self.clothe['title']}) mais non mis en stock.", ephemeral=True)
-                    await self.logs_channel.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
-                                                 f"nom: {self.clothe['title']}) mais non mis en stock.")
-
-            # Case purchase gone wrong
+            # Status not OK - issue with the API, post in logs channel
             else:
-                # TODO: if doesn't work, logs + write in log_channel? and ephemeral for user
-                pass
+                logging.error(f"Could not add clothe to DB: {self.clothe}. Full response: {add_in_stock.text}")
+
+                await interaction.followup.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
+                                             f"nom: {self.clothe['title']}) mais non mis en stock.", ephemeral=True)
+                await self.logs_channel.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
+                                             f"nom: {self.clothe['title']}) mais non mis en stock.")
 
         except Exception as e:
             error_code = 4
