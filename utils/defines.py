@@ -37,6 +37,8 @@ LOGIN_ROUTE = "api/operations/login"
 PICKUP_GET_ROUTE = "api/operations/get_close_pickup_points"
 # Route to save pickup points
 PICKUP_POST_ROUTE = "api/operations/save_pickup_points"
+# Route to autobuy
+AUTOBUY_ROUTE = "api/operations/autobuy"
 # In which category we create new text channel upon saving a clothe request
 CATEGORY = "buybuybuybuy"
 # Time in seconds to wait for a new API call to get_clothes
