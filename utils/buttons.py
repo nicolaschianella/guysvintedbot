@@ -87,12 +87,15 @@ class BuyButtons(discord.ui.View):
 
             else:
                 # Case API error
+                error_code = 18
                 logging.error(f"Error getting clothes from stock, full response: {clothes_in_stock.text}")
+                logging.error(f"Displayed error code [{error_code}]")
 
                 await interaction.followup.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
-                                                f"nom: {self.clothe['title']}) car erreur du programme.", ephemeral=True)
+                                                f"nom: {self.clothe['title']}) car erreur du programme [{error_code}]",
+                                                ephemeral=True)
                 await self.logs_channel.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
-                                                f"nom: {self.clothe['title']}) car erreur du programme.")
+                                                f"nom: {self.clothe['title']}) car erreur du programme [{error_code}]")
                 return
 
             logging.info(f"Processing autobuy for clothe: {self.clothe}")
@@ -114,13 +117,15 @@ class BuyButtons(discord.ui.View):
 
                 # Case error
                 else:
+                    error_code = 19
                     logging.error(f"Could not autobuy clothe: {self.clothe}. Full response: {autobuy.text}")
+                    logging.error(f"Displayed error code [{error_code}]")
 
                     await interaction.followup.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
-                                                    f"nom: {self.clothe['title']}) car erreur du programme.",
+                                                    f"nom: {self.clothe['title']}) car erreur du programme [{error_code}]",
                                                     ephemeral=True)
                     await self.logs_channel.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
-                                                 f"nom: {self.clothe['title']}) car erreur du programme.")
+                                                 f"nom: {self.clothe['title']}) car erreur du programme [{error_code}]")
                     return
 
             logging.info(f"Autobuy OK, inserting clothe in DB (id: {self.clothe['id']})")
@@ -149,12 +154,15 @@ class BuyButtons(discord.ui.View):
 
             # Status not OK - issue with the API, post in logs channel
             else:
+                error_code = 20
                 logging.error(f"Could not add clothe to DB: {self.clothe}. Full response: {add_in_stock.text}")
+                logging.error(f"Displayed error code [{error_code}]")
 
                 await interaction.followup.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
-                                             f"nom: {self.clothe['title']}) mais non mis en stock.", ephemeral=True)
+                                             f"nom: {self.clothe['title']}) mais non mis en stock [{error_code}]",
+                                                ephemeral=True)
                 await self.logs_channel.send(f"⚠️ Vêtement bien acheté (id: {self.clothe['id']}, "
-                                             f"nom: {self.clothe['title']}) mais non mis en stock.")
+                                             f"nom: {self.clothe['title']}) mais non mis en stock [{error_code}]")
 
         except Exception as e:
             error_code = 4
