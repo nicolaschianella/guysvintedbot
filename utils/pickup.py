@@ -173,7 +173,7 @@ class PickUpSelect(discord.ui.Select):
         # Generate options based on pickup_list
         options = [discord.SelectOption(label=pickup["user_display"], value=index) for (index, pickup)
                    in enumerate(pickup_list)]
-        super().__init__(placeholder=f"Point relai {name}",
+        super().__init__(placeholder=f"Point relais {name}",
                          max_values=1,
                          min_values=1,
                          options=options)
