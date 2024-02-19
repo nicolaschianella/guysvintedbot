@@ -46,7 +46,7 @@ WAIT_TIME = "1"
 # API parameter, in case too low can be increased up to 96
 PER_PAGE = "96"
 # Minimal matching ratio between found clothe and search text if provided (0 to 100)
-FUZZ_RATIO = 60
+FUZZ_RATIO = 70
 # In case we could not retrieve clothe images
 NO_IMAGE_AVAILABLE_URL = "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg"
 # Define referenced brands
