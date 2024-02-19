@@ -122,10 +122,12 @@ class BuyButtons(discord.ui.View):
                     logging.error(f"Displayed error code [{error_code}]")
 
                     await interaction.followup.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
-                                                    f"nom: {self.clothe['title']}) car erreur du programme [{error_code}]",
+                                                    f"nom: {self.clothe['title']}) car erreur du programme: "
+                                                    f"{autobuy.json()['message']} [{error_code}]",
                                                     ephemeral=True)
                     await self.logs_channel.send(f"⚠️ Vêtement non acheté (id: {self.clothe['id']}, "
-                                                 f"nom: {self.clothe['title']}) car erreur du programme [{error_code}]")
+                                                 f"nom: {self.clothe['title']}) car erreur du programme: "
+                                                 f"{autobuy.json()['message']} [{error_code}]")
                     return
 
             logging.info(f"Autobuy OK, inserting clothe in DB (id: {self.clothe['id']})")
