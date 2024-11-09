@@ -51,7 +51,9 @@ class GuysVintedBot(discord.Client):
     async def setup_hook(self) -> None:
         """
         Called when the bot starts. Launches all clothes requests and associated channels to post.
-        :return: None
+
+        Returns:
+            None
         """
         # Acquire requests and channel_ids
         clothe_requests, channel_ids = self.load_all_active_requests_and_channels()
@@ -68,7 +70,9 @@ class GuysVintedBot(discord.Client):
     async def on_ready(self) -> None:
         """
         Called when the bot starts. Simple log message.
-        :return: None
+
+        Returns:
+            None
         """
         # Channels need to be defined here to not get NoneType
         self.all_clothes_channel = self.get_channel(int(os.getenv("ALL_CLOTHES_CHANNEL_ID")))
@@ -86,8 +90,9 @@ class GuysVintedBot(discord.Client):
     def get_clothes_ids_in_stock(self) -> list[str]:
         """
         Get all ids of clothes in stock
-        Returns: list[str], list of found clothes ids
 
+        Returns:
+            list[str], list of found clothes ids
         """
         # API call
         clothes_in_stock = requests.get(f"{API_HOST}:{self.port}/{GET_CLOTHES_FROM_STOCK_ROUTE}",
@@ -108,13 +113,17 @@ class GuysVintedBot(discord.Client):
                           f"{clothes_in_stock.status_code})")
             sys.exit(1)
 
-    def get_clothes_api(self, brand_ids, status_ids) -> requests.Response:
+    def get_clothes_api(self, brand_ids: str, status_ids: str) -> requests.Response:
         """
         Embedded function to be executed in a separated thread. Performs a global clothe request to the API
         The used request contains all the referenced brands and clothes states
 
-        Returns: requests.Response, API response
+        Args:
+            brand_ids (str): list of concatenated brand ids (e.g. '14,25,5218')
+            status_ids (str): list of concatenated status ids (e.g. '14,25,5218')
 
+        Returns:
+            requests.Response, API response
         """
         logging.info("Sending global clothes request")
         # Request the API to get new clothes
@@ -125,10 +134,11 @@ class GuysVintedBot(discord.Client):
 
         return response
 
-    async def find_matching_and_post(self, request, new_clothes) -> None:
+    async def find_matching_and_post(self, request: dict, new_clothes: list) -> None:
         """
         Find matching between a given request and new_clothes
         Matching = (same brand) + (clothe state matching) + (price matching) + (search_text matching)
+
         Args:
             request: dict, clothe request
             new_clothes: list, new clothes found
@@ -278,11 +288,15 @@ class GuysVintedBot(discord.Client):
 
     async def get_clothes(self, clothe_requests: list[dict], channel_ids: list[str]) -> None:
         """
-        Sends new clothes using request and post in channels.
-        :param clothe_requests: list[dict], list of request dictionaries
-        :param channel_ids: list[str], corresponding channel_ids where posts are going to be located
-        (we add one more per default where everything is centralised)
-        :return:
+        Sends new clothes using request and post in channels (we add one more per default where everything is
+        centralised).
+
+        Args:
+            clothe_requests (list[dict]): list of request dictionaries
+            channel_ids (list[str]): corresponding channel_ids where posts are going to be located
+
+        Returns:
+            None
         """
         # Wait to have everything set up
         await self.wait_until_ready()
@@ -367,8 +381,10 @@ class GuysVintedBot(discord.Client):
     def load_all_active_requests_and_channels(self) -> tuple:
             """
             Loads all the active requests existing in the DB and associated channels ids.
-            :return: tuple, two elements, first one is a list of requests (dict) and the second one the list
-            of associated channels ids (int) in the same order.
+
+            Returns:
+                tuple, two elements, first one is a list of requests (dict) and the second one the list of associated
+                channels ids (int) in the same order.
             """
             try:
                 # Request the API to get {requests: channel_ids}
@@ -401,8 +417,8 @@ class GuysVintedBot(discord.Client):
     def reset_global_task(self) -> None:
         """
         Resets global task
-        Returns: None
 
+        Returns: None
         """
         # Try to stop the running task (if launched)
         try:

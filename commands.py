@@ -22,20 +22,28 @@ from utils.defines import API_HOST, UPDATE_REQUESTS_ROUTE, ADD_ASSOCIATION_ROUTE
                             PICKUP_GET_ROUTE, PICKUP_POST_ROUTE
 
 
-def define_commands(client, port) -> None:
+def define_commands(client: discord.Client, port: int) -> None:
     """
     Small function adding all the slash commands to the bot.
-    :param client: discord.Client, our bot
-    :param port: int, API port to use
-    :return: None
+
+    Args:
+        client (discord.Client): our bot
+        port (int): API port to use
+
+    Returns:
+        None
     """
 
     @client.tree.command(name="add_request", description="Ajout d'une nouvelle recherche de vêtements")
     async def add_request(interaction: discord.Interaction) -> None:
         """
         Add a new clothe request and run it in background.
-        :param interaction: discord.Interaction
-        :return: None
+
+        Args:
+            interaction (discord.Interaction): interaction to use
+
+        Returns:
+            None
         """
 
         logging.info(f"Adding new clothe request by user: {interaction.user} (id: {interaction.user.id})")
@@ -158,11 +166,11 @@ def define_commands(client, port) -> None:
     async def get_running_requests(interaction: discord.Interaction) -> None:
         """
         Small command showing all the current clothes requests running
+
         Args:
             interaction: discord.Interaction
 
         Returns: None
-
         """
         await interaction.response.defer()
 
@@ -185,8 +193,12 @@ def define_commands(client, port) -> None:
     async def hello(interaction: discord.Interaction) -> None:
         """
         Small ping to bot to check whether he's alive or not.
-        :param interaction: discord.Interaction
-        :return: None
+
+        Args:
+            interaction (discord.Interaction): interaction to use
+
+        Returns:
+            None
         """
         logging.info(f"Hello! (user: {interaction.user}, user_id: {interaction.user.id})")
         await interaction.response.send_message("Hello !", ephemeral=True)
@@ -195,11 +207,11 @@ def define_commands(client, port) -> None:
     async def start_requests(interaction: discord.Interaction) -> None:
         """
         Starts all the requests
+
         Args:
-            interaction: discord.Interaction
+            interaction (discord.Interaction): interaction to use
 
         Returns: None
-
         """
         logging.info(f"Starting all requests - user: {interaction.user} (user_id: {interaction.user.id})")
         await interaction.response.defer()
@@ -217,11 +229,11 @@ def define_commands(client, port) -> None:
     async def stop_requests(interaction: discord.Interaction) -> None:
         """
         Stops all the requests
+
         Args:
-            interaction: discord.Interaction
+            interaction (discord.Interaction): interaction to use
 
         Returns: None
-
         """
         logging.info(f"Stopping all requests - user: {interaction.user} (user_id: {interaction.user.id})")
 
@@ -236,11 +248,11 @@ def define_commands(client, port) -> None:
     async def login(interaction: discord.Interaction) -> None:
         """
         Login using Bearer token
+
         Args:
-            interaction: discord.Interaction
+            interaction (discord.Interaction): interation to use
 
         Returns: None
-
         """
         logging.info(f"Login - user: {interaction.user} (user_id: {interaction.user.id})")
 
@@ -291,11 +303,11 @@ def define_commands(client, port) -> None:
     async def pickup(interaction: discord.Interaction) -> None:
         """
         Choose pickup points
+
         Args:
-            interaction: discord.Interaction
+            interaction (discord.Interaction): interaction to use
 
         Returns: None
-
         """
         logging.info(f"Pickup - user: {interaction.user} (user_id: {interaction.user.id})")
 
@@ -392,8 +404,12 @@ def define_commands(client, port) -> None:
     async def sync(interaction: discord.Interaction) -> None:
         """
         Sync slash commands.
-        :param interaction: discord.Interaction
-        :return: None
+
+        Args:
+            interaction (discord.Interaction): interaction to use
+
+        Returns:
+            None
         """
         if interaction.user.id == int(os.getenv("NEEKO_ID")):
             logging.info(f"Neeko syncing command tree")
